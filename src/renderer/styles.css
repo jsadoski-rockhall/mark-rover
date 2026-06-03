@@ -1,0 +1,327 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.reader {
+  font-family: var(--reader-font, Georgia, Cambria, "Times New Roman", serif);
+  font-size: var(--reader-font-size, 18px);
+  line-height: var(--reader-line-height, 1.68);
+  max-width: min(var(--reader-measure, 70ch), 100%);
+  margin-inline: auto;
+  overflow-wrap: break-word;
+  font-kerning: normal;
+  font-variant-ligatures: var(--reader-ligatures, common-ligatures contextual);
+}
+
+.control-button {
+  border: 1px solid rgb(203 213 225);
+  border-radius: 6px;
+  color: rgb(71 85 105);
+  min-width: 2.4rem;
+  padding: 0.25rem 0.45rem;
+}
+
+.control-button:hover,
+.control-button.active-control {
+  background: rgb(15 23 42);
+  border-color: rgb(15 23 42);
+  color: white;
+}
+
+.prose-mark-rover :where(h1, h2, h3, h4) {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.18;
+  margin: 1.7em 0 0.55em;
+}
+
+.prose-mark-rover h1 {
+  font-size: 2.35rem;
+  margin-top: 0;
+}
+
+.prose-mark-rover h2 {
+  font-size: 1.65rem;
+}
+
+.prose-mark-rover h3 {
+  font-size: 1.25rem;
+}
+
+.prose-mark-rover p,
+.prose-mark-rover ul,
+.prose-mark-rover ol,
+.prose-mark-rover blockquote,
+.prose-mark-rover pre,
+.prose-mark-rover table {
+  margin: 1em 0;
+}
+
+.prose-mark-rover a {
+  color: #2563eb;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.16em;
+}
+
+.prose-mark-rover blockquote {
+  border-left: 3px solid #94a3b8;
+  color: #475569;
+  padding-left: 1rem;
+}
+
+.prose-mark-rover code {
+  background: rgb(226 232 240 / 0.75);
+  border-radius: 4px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.88em;
+  padding: 0.1em 0.28em;
+}
+
+.prose-mark-rover pre {
+  position: relative;
+  background: #0f172a;
+  border-radius: 8px;
+  color: #e2e8f0;
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+.copy-code-button {
+  background: rgb(248 250 252 / 0.92);
+  border: 1px solid rgb(203 213 225 / 0.4);
+  border-radius: 6px;
+  color: #0f172a;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0.4rem 0.5rem;
+  position: absolute;
+  right: 0.65rem;
+  top: 0.65rem;
+}
+
+.prose-mark-rover input[type="checkbox"] {
+  accent-color: #0f172a;
+  cursor: pointer;
+  height: 1rem;
+  margin-right: 0.45rem;
+  vertical-align: -0.12em;
+  width: 1rem;
+}
+
+.modal-backdrop {
+  align-items: center;
+  background: rgb(15 23 42 / 0.46);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: fixed;
+  z-index: 20;
+}
+
+.security-modal {
+  background: white;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 8px;
+  box-shadow: 0 24px 60px rgb(15 23 42 / 0.22);
+  color: #0f172a;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  max-width: min(34rem, 100%);
+  padding: 1rem;
+}
+
+.security-modal h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.65rem;
+}
+
+.security-modal p {
+  color: #475569;
+  font-size: 0.875rem;
+  line-break: anywhere;
+  margin: 0;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.primary-action,
+.secondary-action {
+  border-radius: 6px;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 650;
+  padding: 0.5rem 0.75rem;
+}
+
+.primary-action {
+  background: #0f172a;
+  color: white;
+}
+
+.secondary-action {
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in {
+  color: #93c5fd;
+}
+
+.hljs-string,
+.hljs-title,
+.hljs-name {
+  color: #86efac;
+}
+
+.hljs-number,
+.hljs-literal {
+  color: #fca5a5;
+}
+
+.hljs-comment {
+  color: #94a3b8;
+}
+
+.prose-mark-rover pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.prose-mark-rover img {
+  border-radius: 6px;
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
+.prose-mark-rover table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+}
+
+.prose-mark-rover .large-markdown-table {
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.prose-mark-rover .large-markdown-table th {
+  background: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.mermaid-placeholder {
+  min-height: 8rem;
+}
+
+.mermaid-loading::after {
+  color: #cbd5e1;
+  content: attr(data-loading-label);
+  display: block;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8rem;
+  margin-top: 0.75rem;
+}
+
+.mermaid-error {
+  border: 1px solid #fca5a5;
+}
+
+.mermaid-figure {
+  margin: 1.25rem 0;
+  overflow-x: auto;
+}
+
+.mermaid-figure svg {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
+.prose-mark-rover th,
+.prose-mark-rover td {
+  border: 1px solid #cbd5e1;
+  padding: 0.45rem 0.6rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .prose-mark-rover a {
+    color: #93c5fd;
+  }
+
+  .prose-mark-rover blockquote {
+    border-left-color: #52525b;
+    color: #d4d4d8;
+  }
+
+  .prose-mark-rover code {
+    background: rgb(63 63 70 / 0.9);
+  }
+
+  .prose-mark-rover th,
+  .prose-mark-rover td {
+    border-color: #3f3f46;
+  }
+
+  .prose-mark-rover .large-markdown-table th {
+    background: #18181b;
+  }
+
+  .control-button {
+    border-color: rgb(63 63 70);
+    color: rgb(212 212 216);
+  }
+
+  .control-button:hover,
+  .control-button.active-control {
+    background: rgb(244 244 245);
+    border-color: rgb(244 244 245);
+    color: rgb(24 24 27);
+  }
+
+  .prose-mark-rover input[type="checkbox"] {
+    accent-color: #f4f4f5;
+  }
+
+  .security-modal {
+    background: #18181b;
+    border-color: #3f3f46;
+    color: #fafafa;
+  }
+
+  .security-modal p {
+    color: #d4d4d8;
+  }
+
+  .primary-action {
+    background: #f4f4f5;
+    color: #18181b;
+  }
+
+  .secondary-action {
+    border-color: #52525b;
+    color: #e4e4e7;
+  }
+}

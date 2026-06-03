@@ -1,0 +1,8 @@
+.prototype/
+node_modules/
+.pnpm-store/
+dist/
+out/
+.packager/
+.DS_Store
+*.log
