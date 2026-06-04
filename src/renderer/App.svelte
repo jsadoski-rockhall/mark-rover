@@ -4,6 +4,12 @@
 
   const preferenceKey = "mark-rover.reader-preferences";
   const widthOptions = [66, 70, 88];
+  const treatmentOptions = [
+    { key: "treatmentBroadsheet", value: "broadsheet" },
+    { key: "treatmentManuscript", value: "manuscript" },
+    { key: "treatmentConsole", value: "console" }
+  ];
+  const treatmentValues = new Set(treatmentOptions.map((option) => option.value));
   const fontOptions = [
     { key: "fontSerif", value: "serif" },
     { key: "fontSans", value: "sans" },
@@ -23,6 +29,10 @@
       lineHeight: "Line",
       textSize: "Size",
       ligatures: "Ligatures",
+      treatment: "Treatment",
+      treatmentBroadsheet: "Broadsheet",
+      treatmentManuscript: "Manuscript",
+      treatmentConsole: "Console",
       loading: "Loading document...",
       openExternalTitle: "Open external link?",
       cancel: "Cancel",
@@ -47,6 +57,10 @@
       lineHeight: "Línea",
       textSize: "Tamaño",
       ligatures: "Ligaduras",
+      treatment: "Estilo",
+      treatmentBroadsheet: "Broadsheet",
+      treatmentManuscript: "Manuscrito",
+      treatmentConsole: "Consola",
       loading: "Cargando documento...",
       openExternalTitle: "¿Abrir enlace externo?",
       cancel: "Cancelar",
@@ -89,7 +103,8 @@
     lineHeight: 1.68,
     font: "serif",
     ligatures: true,
-    locale: "en"
+    locale: "en",
+    treatment: "broadsheet"
   };
   let pretextStats = null;
   let pendingExternalLink = null;
@@ -311,6 +326,9 @@
     if (saved) {
       preferences = { ...preferences, ...JSON.parse(saved) };
     }
+    if (!treatmentValues.has(preferences.treatment)) {
+      preferences = { ...preferences, treatment: "broadsheet" };
+    }
     state = await window.markRover.getDocument();
     if (state.status === "ready") markReady();
     if (state.status === "ready") {
@@ -351,11 +369,28 @@
   });
 </script>
 
-<main class="min-h-screen bg-slate-50 text-slate-950 transition-colors dark:bg-zinc-950 dark:text-zinc-50">
+<main
+  class="app-shell min-h-screen text-slate-950 transition-colors dark:text-zinc-50"
+  class:treatment-broadsheet={preferences.treatment === "broadsheet"}
+  class:treatment-manuscript={preferences.treatment === "manuscript"}
+  class:treatment-console={preferences.treatment === "console"}
+>
   <div class="mx-auto flex min-h-screen w-full max-w-[96ch] flex-col px-5 py-6 sm:px-8 lg:px-10">
     <header class="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4 font-ui text-sm text-slate-500 dark:border-zinc-800 dark:text-zinc-400">
       <div class="font-ui font-semibold tracking-wide text-slate-700 dark:text-zinc-200">{t.appName}</div>
       <div class="flex flex-wrap items-center gap-3">
+        <fieldset class="flex items-center gap-1" aria-label={t.treatment}>
+          {#each treatmentOptions as option}
+            <button
+              class:active-control={preferences.treatment === option.value}
+              class="control-button"
+              type="button"
+              on:click={() => updatePreference("treatment", option.value)}
+            >
+              {t[option.key]}
+            </button>
+          {/each}
+        </fieldset>
         <fieldset class="flex items-center gap-1" aria-label={t.lineWidth}>
           {#each widthOptions as width}
             <button
