@@ -3,7 +3,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const corpusDir = resolve(process.cwd(), "tests/corpus");
-const files = (await readdir(corpusDir)).filter((file) => file.endsWith(".md")).sort();
+const files = (await readdir(corpusDir)).filter((file) => file.endsWith(".md")).toSorted();
 
 function renderMarkdown(markdown, documentPath) {
   return new Promise((resolveRender, rejectRender) => {

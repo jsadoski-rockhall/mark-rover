@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/main/main.mjs",
+    "src/main/render-worker.mjs",
+    "src/preload/preload.cjs",
+    "scripts/*.mjs",
+    "tests/*.mjs"
+  ],
+  "project": ["src/**/*.{js,mjs,cjs,svelte}", "scripts/**/*.mjs", "tests/**/*.mjs"]
+}

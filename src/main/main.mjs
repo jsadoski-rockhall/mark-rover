@@ -56,7 +56,9 @@ function metric(event, extra = {}) {
     if (firstViewportReadyEmitted) return;
     firstViewportReadyEmitted = true;
   }
-  process.stdout.write(`${JSON.stringify({ app: "mark-rover", event, t: performance.now() - startedAt, ...extra })}\n`);
+  process.stdout.write(
+    `${JSON.stringify({ app: "mark-rover", event, t: performance.now() - startedAt, ...extra })}\n`
+  );
   if (event === "first_viewport_ready") {
     setTimeout(() => app.quit(), 20);
   }
@@ -66,7 +68,10 @@ function getRenderWorkerPath() {
   const bundledPath = resolve(here, "render-worker.cjs");
   if (!app.isPackaged) return bundledPath;
 
-  const unpackedPath = resolve(process.resourcesPath, "app.asar.unpacked/dist/main/render-worker.cjs");
+  const unpackedPath = resolve(
+    process.resourcesPath,
+    "app.asar.unpacked/dist/main/render-worker.cjs"
+  );
   return existsSync(unpackedPath) ? unpackedPath : bundledPath;
 }
 
@@ -181,7 +186,12 @@ async function renderDocument(documentPath) {
   worker.once("exit", (code) => {
     if (code !== 0 && renderState.status === "loading") {
       metric("parse_exit", { code });
-      renderState = { status: "error", html: "", meta: {}, error: `Worker exited with code ${code}` };
+      renderState = {
+        status: "error",
+        html: "",
+        meta: {},
+        error: `Worker exited with code ${code}`
+      };
       mainWindow?.webContents.send("document:update", renderState);
     }
   });
@@ -202,18 +212,17 @@ ipcMain.handle("link:open-external", async (_event, href) => {
 });
 ipcMain.on("metric:first-viewport-ready", () => metric("first_viewport_ready"));
 
-app.whenReady().then(async () => {
-  metric("process_start");
-  protocol.handle("mark-rover-file", async (request) => {
-    const encodedPath = request.url.replace("mark-rover-file://", "");
-    const filePath = decodeURIComponent(encodedPath);
-    const bytes = await readFile(filePath);
-    return new Response(bytes);
-  });
-  currentDocument = { path: getDocumentPath() };
-  createWindow();
-  await renderDocument(currentDocument.path);
+await app.whenReady();
+metric("process_start");
+protocol.handle("mark-rover-file", async (request) => {
+  const encodedPath = request.url.replace("mark-rover-file://", "");
+  const filePath = decodeURIComponent(encodedPath);
+  const bytes = await readFile(filePath);
+  return new Response(bytes);
 });
+currentDocument = { path: getDocumentPath() };
+createWindow();
+await renderDocument(currentDocument.path);
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();

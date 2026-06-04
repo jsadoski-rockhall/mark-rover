@@ -9,9 +9,9 @@ Mark Rover opens local markdown documents quickly and keeps the reading surface 
 - Task lists
 - Tables
 
-| Feature | Status |
-| --- | --- |
-| Worker rendering | yes |
-| Relative links | deferred |
+| Feature          | Status   |
+| ---------------- | -------- |
+| Worker rendering | yes      |
+| Relative links   | deferred |
 
 > A README-shaped document should feel ordinary and unsurprising.

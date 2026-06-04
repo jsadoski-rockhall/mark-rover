@@ -8,23 +8,24 @@ const vite = spawn("pnpm", ["exec", "vite", "--host", "127.0.0.1"], {
   env: process.env
 });
 
-let devUrl = "";
+let resolveDevUrl;
+const devUrlReady = new Promise((resolve) => {
+  resolveDevUrl = resolve;
+});
 
 vite.stdout.on("data", (chunk) => {
   const text = String(chunk);
   process.stdout.write(text);
   const match = text.match(/http:\/\/127\.0\.0\.1:(\d+)\//);
   if (match) {
-    devUrl = `http://127.0.0.1:${match[1]}`;
+    resolveDevUrl(`http://127.0.0.1:${match[1]}`);
   }
 });
 
-while (!devUrl) {
-  if (vite.exitCode !== null) {
-    process.exit(vite.exitCode ?? 1);
-  }
-  await new Promise((resolve) => setTimeout(resolve, 50));
-}
+const devUrl = await Promise.race([
+  devUrlReady,
+  once(vite, "exit").then(([code]) => process.exit(code ?? 1))
+]);
 
 const electronProcess = spawn(electron, [".", "--", ...args], {
   stdio: "inherit",

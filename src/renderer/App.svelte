@@ -81,6 +81,8 @@
     meta: {},
     error: null
   };
+  function noop() {}
+
   let preferences = {
     measure: 70,
     fontSize: 18,
@@ -335,10 +337,11 @@
   }
 
   onMount(() => {
-    let unsubscribeDocumentUpdates = () => {};
+    let unsubscribeDocumentUpdates = noop;
     document.addEventListener("click", handleDocumentClick, true);
     initializeDocument().then((unsubscribe) => {
       unsubscribeDocumentUpdates = unsubscribe;
+      return undefined;
     });
 
     return () => {

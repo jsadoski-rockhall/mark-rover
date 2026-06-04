@@ -28,7 +28,7 @@ function slugify(text) {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[`~!@#$%^&*()+=\[\]{}\\|;:'",.<>/?]/g, "")
+    .replace(/[`~!@#$%^&*()+=\u005B\]{}\\|;:'",.<>/?]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
@@ -70,7 +70,9 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   if (/^https?:/i.test(href)) {
     tokens[idx].attrSet("rel", "noreferrer");
   }
-  return defaultLinkOpen ? defaultLinkOpen(tokens, idx, options, env, self) : self.renderToken(tokens, idx, options);
+  return defaultLinkOpen
+    ? defaultLinkOpen(tokens, idx, options, env, self)
+    : self.renderToken(tokens, idx, options);
 };
 
 const allowedTags = sanitizeHtml.defaults.allowedTags.concat([
@@ -118,7 +120,10 @@ try {
     html,
     meta: {
       tokens: tokens.length,
-      images: tokens.filter((token) => token.type === "inline" && token.children?.some((child) => child.type === "image")).length,
+      images: tokens.filter(
+        (token) =>
+          token.type === "inline" && token.children?.some((child) => child.type === "image")
+      ).length,
       renderDurationMs: performance.now() - startedAt
     }
   });
