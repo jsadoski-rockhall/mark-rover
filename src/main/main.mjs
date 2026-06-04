@@ -212,17 +212,22 @@ ipcMain.handle("link:open-external", async (_event, href) => {
 });
 ipcMain.on("metric:first-viewport-ready", () => metric("first_viewport_ready"));
 
-await app.whenReady();
-metric("process_start");
-protocol.handle("mark-rover-file", async (request) => {
-  const encodedPath = request.url.replace("mark-rover-file://", "");
-  const filePath = decodeURIComponent(encodedPath);
-  const bytes = await readFile(filePath);
-  return new Response(bytes);
+// NOTE: do not `await app.whenReady()` at the top level of this ESM entry
+// point. Electron does not emit the `ready` event until the main module has
+// finished evaluating, so a top-level await on `whenReady()` deadlocks the
+// app (it launches but never opens a window). Run startup from the callback.
+app.whenReady().then(async () => {
+  metric("process_start");
+  protocol.handle("mark-rover-file", async (request) => {
+    const encodedPath = request.url.replace("mark-rover-file://", "");
+    const filePath = decodeURIComponent(encodedPath);
+    const bytes = await readFile(filePath);
+    return new Response(bytes);
+  });
+  currentDocument = { path: getDocumentPath() };
+  createWindow();
+  await renderDocument(currentDocument.path);
 });
-currentDocument = { path: getDocumentPath() };
-createWindow();
-await renderDocument(currentDocument.path);
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
