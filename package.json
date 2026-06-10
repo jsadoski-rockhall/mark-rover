@@ -21,7 +21,7 @@
     "bench": "node ./scripts/bench.ts",
     "test": "node ./scripts/corpus-smoke.ts",
     "table:threshold": "node ./scripts/table-threshold.ts",
-    "test:electron": "node ./tests/electron-smoke.ts && node ./tests/localization-smoke.ts",
+    "test:electron": "node ./tests/electron-smoke.ts && node ./tests/localization-smoke.ts && node ./tests/mermaid-smoke.ts",
     "cdp:launch": "MARK_ROVER_CDP_PORT=9222 electron . -- tests/corpus/smoke.md",
     "package:mac": "pnpm build && node ./scripts/package-mac.ts"
   },

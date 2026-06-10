@@ -57,6 +57,18 @@ for (const file of files) {
     failures.push("code-heavy.md: highlight.js classes missing");
   }
 
+  if (file === "mermaid.md") {
+    // Mermaid is a renderer-side, lazy enhancement. The worker must hand the
+    // fences through as inert code blocks, never as pre-rendered SVG.
+    const fences = result.html.match(/language-mermaid/g)?.length ?? 0;
+    if (fences < 3) {
+      failures.push(`mermaid.md: expected 3 inert mermaid fences, found ${fences}`);
+    }
+    if (/<svg/i.test(result.html)) {
+      failures.push("mermaid.md: worker output must not contain pre-rendered SVG");
+    }
+  }
+
   if (file === "smoke.md" && !/id="smoke-document"/.test(result.html)) {
     failures.push("smoke.md: heading anchor missing");
   }
