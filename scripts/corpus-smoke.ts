@@ -53,6 +53,20 @@ for (const file of files) {
     failures.push("table-heavy.md: table missing");
   }
 
+  if (file === "table-wide.md") {
+    const headerCells = result.html.match(/<th>/g)?.length ?? 0;
+    if (headerCells < 12) {
+      failures.push(`table-wide.md: expected 12 header cells, found ${headerCells}`);
+    }
+  }
+
+  if (file === "table-long.md") {
+    const bodyRows = result.html.match(/<tr>/g)?.length ?? 0;
+    if (bodyRows < 48) {
+      failures.push(`table-long.md: expected at least 48 rows, found ${bodyRows}`);
+    }
+  }
+
   if (file === "code-heavy.md" && !/hljs-/.test(result.html)) {
     failures.push("code-heavy.md: highlight.js classes missing");
   }
