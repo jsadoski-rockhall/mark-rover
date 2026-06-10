@@ -30,6 +30,46 @@ try {
     throw new Error(`Expected resized reader text to be 22px, got ${readerFontSize}`);
   }
 
+  // Pretext-controlled fit: in a window too narrow for the selected measure at
+  // 22px, enabling Fit must shrink the rendered size below the slider value.
+  const originalBounds = await app.evaluate(({ BrowserWindow }) => {
+    return BrowserWindow.getAllWindows()[0].getBounds();
+  });
+  await app.evaluate(({ BrowserWindow }) => {
+    BrowserWindow.getAllWindows()[0].setBounds({ width: 480, height: 700 });
+  });
+  await page.locator('[data-testid="fit-text-toggle"]').check();
+  await page.waitForFunction(
+    () => {
+      const article = document.querySelector('[data-testid="document"]');
+      return article !== null && parseFloat(window.getComputedStyle(article).fontSize) < 22;
+    },
+    undefined,
+    { timeout: 2000 }
+  );
+  const fittedFontSize = await page.locator('[data-testid="document"]').evaluate((element) => {
+    return window.getComputedStyle(element).fontSize;
+  });
+  const fittedReadout = await page.locator('[data-testid="text-size-value"]').textContent();
+  if (`${fittedReadout}px` !== fittedFontSize) {
+    throw new Error(
+      `Size readout (${fittedReadout}) does not match fitted font size (${fittedFontSize})`
+    );
+  }
+
+  await page.locator('[data-testid="fit-text-toggle"]').uncheck();
+  await page.waitForFunction(
+    () => {
+      const article = document.querySelector('[data-testid="document"]');
+      return article !== null && window.getComputedStyle(article).fontSize === "22px";
+    },
+    undefined,
+    { timeout: 2000 }
+  );
+  await app.evaluate(({ BrowserWindow }, bounds) => {
+    BrowserWindow.getAllWindows()[0].setBounds(bounds);
+  }, originalBounds);
+
   const gutterHiddenByDefault = await page
     .locator(".line-number-gutter")
     .first()

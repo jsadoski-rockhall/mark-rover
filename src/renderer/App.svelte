@@ -1,6 +1,12 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
-  import { layout, prepare, type LayoutResult } from "@chenglou/pretext";
+  import {
+    layout,
+    measureNaturalWidth,
+    prepare,
+    prepareWithSegments,
+    type LayoutResult
+  } from "@chenglou/pretext";
   import type { RenderState } from "../shared/ipc.ts";
 
   type Locale = "en" | "es";
@@ -11,6 +17,7 @@
   interface ReaderPreferences {
     measure: number;
     fontSize: number;
+    fitTextSize: boolean;
     lineHeight: number;
     font: FontKey;
     ligatures: boolean;
@@ -45,6 +52,7 @@
       lineWidth: "Line width",
       lineHeight: "Line",
       textSize: "Size",
+      fitText: "Fit",
       ligatures: "Ligatures",
       treatment: "Treatment",
       treatmentBroadsheet: "Broadsheet",
@@ -74,6 +82,7 @@
       lineWidth: "Ancho de línea",
       lineHeight: "Línea",
       textSize: "Tamaño",
+      fitText: "Ajustar",
       ligatures: "Ligaduras",
       treatment: "Estilo",
       treatmentBroadsheet: "Broadsheet",
@@ -122,6 +131,7 @@
   let preferences: ReaderPreferences = {
     measure: 70,
     fontSize: 18,
+    fitTextSize: false,
     lineHeight: 1.68,
     font: "serif",
     ligatures: true,
@@ -130,11 +140,14 @@
     codeLineNumbers: false
   };
   let pretextStats: LayoutResult | null = null;
+  let fittedFontSize: number | null = null;
   let pendingExternalLink: string | null = null;
 
+  $: effectiveFontSize =
+    preferences.fitTextSize && fittedFontSize !== null ? fittedFontSize : preferences.fontSize;
   $: readerStyle = [
     `--reader-measure: ${preferences.measure}ch`,
-    `--reader-font-size: ${preferences.fontSize}px`,
+    `--reader-font-size: ${effectiveFontSize}px`,
     `--reader-line-height: ${preferences.lineHeight}`,
     `--reader-font: ${fontStacks[preferences.font]}`,
     `--reader-ligatures: ${preferences.ligatures ? "common-ligatures contextual" : "none"}`
@@ -159,12 +172,52 @@
     requestAnimationFrame(runPretextProbe);
   }
 
+  // Finds the largest font size (preferred at most, 12px at least) at which a
+  // representative line of `measure` characters fits the content width without
+  // wrapping. Pretext measures the real font, so the result tracks the actual
+  // glyph widths rather than a per-font width heuristic.
+  function computeFittedFontSize(article: Element): number {
+    const container = article.parentElement;
+    if (!container) return preferences.fontSize;
+
+    const containerStyles = getComputedStyle(container);
+    const available =
+      container.clientWidth -
+      parseFloat(containerStyles.paddingLeft) -
+      parseFloat(containerStyles.paddingRight);
+    if (!Number.isFinite(available) || available <= 0) return preferences.fontSize;
+
+    const fallback = "the quick brown fox jumps over the lazy dog and keeps on running ";
+    let reference =
+      article.querySelector("p")?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    while (reference.length < preferences.measure) reference += ` ${fallback}`;
+    reference = reference.slice(0, preferences.measure);
+
+    const fontAt = (size: number) => `${size}px ${fontStacks[preferences.font]}`;
+    let size = preferences.fontSize;
+    const naturalWidth = measureNaturalWidth(prepareWithSegments(reference, fontAt(size)));
+    if (naturalWidth <= available) return size;
+
+    // Glyph widths scale almost linearly with font size; estimate, then nudge
+    // down until the reference line actually fits.
+    size = Math.max(12, Math.floor((size * available) / naturalWidth));
+    while (
+      size > 12 &&
+      measureNaturalWidth(prepareWithSegments(reference, fontAt(size))) > available
+    ) {
+      size -= 1;
+    }
+    return size;
+  }
+
   function runPretextProbe(): void {
     const article = document.querySelector('[data-testid="document"]');
     const firstParagraph = article?.querySelector("p");
     if (!article || !firstParagraph?.textContent) return;
 
-    const fontSize = preferences.fontSize;
+    fittedFontSize = preferences.fitTextSize ? computeFittedFontSize(article) : null;
+    const fontSize =
+      preferences.fitTextSize && fittedFontSize !== null ? fittedFontSize : preferences.fontSize;
     const width = Math.min(article.clientWidth || 720, preferences.measure * fontSize * 0.56);
     const lineHeightPx = fontSize * preferences.lineHeight;
     const prepared = prepare(
@@ -410,9 +463,14 @@
     return unsubscribe;
   }
 
+  function handleWindowResize(): void {
+    if (preferences.fitTextSize) queuePretextProbe();
+  }
+
   onMount(() => {
     let unsubscribeDocumentUpdates: () => void = noop;
     document.addEventListener("click", handleDocumentClick, true);
+    window.addEventListener("resize", handleWindowResize);
     initializeDocument().then((unsubscribe) => {
       unsubscribeDocumentUpdates = unsubscribe;
       return undefined;
@@ -420,6 +478,7 @@
 
     return () => {
       document.removeEventListener("click", handleDocumentClick, true);
+      window.removeEventListener("resize", handleWindowResize);
       unsubscribeDocumentUpdates();
     };
   });
@@ -484,7 +543,16 @@
             data-testid="text-size-slider"
             on:input={(event) => updatePreference("fontSize", Number(event.currentTarget.value))}
           />
-          <output class="tabular-nums" data-testid="text-size-value">{preferences.fontSize}</output>
+          <output class="tabular-nums" data-testid="text-size-value">{effectiveFontSize}</output>
+        </label>
+        <label class="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={preferences.fitTextSize}
+            data-testid="fit-text-toggle"
+            on:change={(event) => updatePreference("fitTextSize", event.currentTarget.checked)}
+          />
+          <span>{t.fitText}</span>
         </label>
         <select
           class="rounded border border-slate-300 bg-white px-2 py-1 text-slate-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
