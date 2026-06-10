@@ -8,6 +8,7 @@
     type LayoutResult
   } from "@chenglou/pretext";
   import type { RenderState } from "../shared/ipc.ts";
+  import { isLargeTable } from "../shared/table-threshold.ts";
 
   type Locale = "en" | "es";
   type FontKey = "serif" | "sans" | "mono" | "slab" | "comic" | "script";
@@ -357,7 +358,7 @@
       table.dataset.tableEnhanced = "true";
       table.dataset.rows = String(rowCount);
       table.dataset.columns = String(columnCount);
-      if (rowCount >= 8 || columnCount >= 6) {
+      if (isLargeTable(rowCount, columnCount)) {
         table.classList.add("large-markdown-table");
       }
     });

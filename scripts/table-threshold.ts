@@ -1,15 +1,11 @@
 import { createTable, getCoreRowModel, type ColumnDef } from "@tanstack/table-core";
+import { isLargeTable, largeTableThreshold } from "../src/shared/table-threshold.ts";
 
 interface FeatureRow {
   feature: string;
   status: string;
   owner: string;
 }
-
-const threshold = {
-  rows: 8,
-  columns: 6
-};
 
 const sampleData: FeatureRow[] = Array.from({ length: 12 }, (_row, index) => ({
   feature: `Feature ${index + 1}`,
@@ -33,11 +29,13 @@ const table = createTable<FeatureRow>({
 });
 
 const rowCount = table.getRowModel().rows.length;
-const shouldEnhance = rowCount >= threshold.rows || columns.length >= threshold.columns;
+const shouldEnhance = isLargeTable(rowCount, columns.length);
 
 if (!shouldEnhance) {
   console.error("Expected sample data to cross the large-table threshold.");
   process.exit(1);
 }
 
-console.log(`Large-table threshold verified with ${rowCount} rows and ${columns.length} columns.`);
+console.log(
+  `Large-table threshold (${largeTableThreshold.rows} rows / ${largeTableThreshold.columns} columns) verified with ${rowCount} rows and ${columns.length} columns.`
+);
