@@ -1,6 +1,6 @@
 # Bootstrap Electron Svelte Tailwind Worker App
 
-Status: ready-for-agent
+Status: completed
 
 ## Goal
 
@@ -32,3 +32,4 @@ Worker offloading has already been validated in `/Users/joesadoski/Projects/mark
 - 2026-06-01: First launch failed because pnpm ignored Electron/esbuild build scripts, leaving the Electron binary missing. Added `pnpm.onlyBuiltDependencies` for `electron` and `esbuild` in the package.
 - 2026-06-01: `pnpm check` passed. Smoke launch with the PRD markdown file succeeded and the process was stopped after verification. Prototype 02 is the first last-known-good implementation.
 - 2026-06-01: Later prototype 03 diagnostics showed Vite's default absolute asset paths meant the Svelte bundle did not load under Electron `loadFile`; patched prototype 02 with `base: "./"`.
+- 2026-06-09: Verified in the consolidated app and marked completed. The app lives at the repo root with clear main/preload/renderer/worker boundaries (`src/main/main.ts`, `src/preload/preload.ts`, `src/renderer/App.svelte`, `src/main/render-worker.ts`), uses Electron + Svelte 5 + Tailwind + worker-first markdown rendering, accepts a markdown path as the final CLI argument, and `package.json` provides `dev`, `build`, `test`, and related scripts.

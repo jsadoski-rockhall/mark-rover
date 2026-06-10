@@ -1,6 +1,6 @@
 # Add Code Block Line Numbers
 
-Status: ready-for-agent
+Status: completed
 
 ## Goal
 
@@ -29,3 +29,4 @@ This covers rendered fenced code blocks in the markdown viewer. It does not requ
 ## Comments
 
 - 2026-06-01: Added as a future feature request.
+- 2026-06-09: Implemented. New `codeLineNumbers` reader preference (default off) persisted with the other viewer settings, with a localized toggle (`Line numbers` / `Números de línea`) in the reader controls. The code-block enhancement pass builds a line-number gutter per fenced block (skipping Mermaid blocks); the gutter is a sibling of `<code>` inside `<pre>`, `aria-hidden`, and `user-select: none`, so copy-to-clipboard (which reads `code.textContent`) and text selection never include the numbers. Visibility is toggled purely via a `show-line-numbers` class bound to the preference, so the toggle is instant without re-rendering. When enabled, the `pre` becomes a two-column grid: gutter and code share line boxes (same mono font-size/line-height, so numbers align with highlighted code in every treatment and in dark mode), and the code column takes over horizontal scrolling so long lines slide under their own scrollbar, never under the numbers. Verified: `pnpm qa`, plus new `pnpm test:electron` assertions (gutter hidden by default, visible and numbered after toggle, structurally outside `<code>`); bench on `tests/corpus/code-heavy.md` emitted `first_viewport_ready` ≈164 ms — no regression.

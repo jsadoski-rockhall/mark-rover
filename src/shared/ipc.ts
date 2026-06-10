@@ -4,12 +4,15 @@
 
 type RenderStatus = "idle" | "loading" | "ready" | "error";
 
+export type DocumentDirection = "ltr" | "rtl";
+
 interface RenderMeta {
   bytes?: number;
   tokens?: number;
   images?: number;
   renderDurationMs?: number;
   documentPath?: string;
+  direction?: DocumentDirection;
 }
 
 export interface RenderState {
@@ -29,6 +32,7 @@ interface WorkerMeta {
   tokens: number;
   images: number;
   renderDurationMs: number;
+  direction: DocumentDirection;
 }
 
 /** Message the render worker posts back to the main process. */

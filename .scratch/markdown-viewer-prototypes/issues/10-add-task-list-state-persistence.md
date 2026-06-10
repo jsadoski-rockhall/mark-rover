@@ -1,6 +1,6 @@
 # Add Task List State Persistence
 
-Status: ready-for-agent
+Status: completed
 
 ## Goal
 
@@ -24,3 +24,4 @@ Persist checkbox state locally without pretending markdown source mutation is so
 
 - 2026-06-01: Created `.prototype/10` by copying forward successful prototype 09. Added renderer-side task list enhancement that enables sanitized checkbox inputs, keys state by document path + task index + label text hash, and stores overrides in local storage without mutating markdown. This is intentionally brittle around nearby task edits and documented as such. Pending install/check/test/bench verification.
 - 2026-06-01: `pnpm check` and `pnpm test` passed. One-iteration benchmark on `corpus/task-list.md` emitted `first_viewport_ready` around 237 ms. Prototype 10 is successful.
+- 2026-06-09: Verified in the consolidated app and marked completed. `enhanceTaskLists` in `src/renderer/App.svelte` enables sanitized checkbox inputs after render, keys state by document path + task index + a hash of the label text (`mark-rover.task:` local-storage keys), and applies persisted overrides on render without ever mutating the markdown source. The documented brittleness around nearby task edits is inherent to the identity scheme and remains a known limitation. `tests/corpus/task-list.md` covers the rendering path.

@@ -1,6 +1,6 @@
 # Implement Secure Electron Boundary
 
-Status: ready-for-agent
+Status: completed
 
 ## Goal
 
@@ -26,3 +26,4 @@ Make the default Electron app shape safe for arbitrary local markdown before fea
 
 - 2026-06-01: Created `.prototype/05` by copying forward successful prototype 04. Added privileged `mark-rover-file://` protocol, rewrote relative image sources in the worker to that protocol, kept sandbox/context isolation/no node integration, explicitly enabled web security, and extended corpus smoke assertions for protocol rewriting. Pending install/check/test/bench verification.
 - 2026-06-01: `pnpm check` and `pnpm test` passed. One-iteration benchmark on `corpus/smoke.md` emitted `first_viewport_ready` around 187 ms. Prototype 05 is successful. Caveat: full process elapsed was about 2 seconds despite early readiness, likely Electron shutdown/protocol lifecycle overhead worth revisiting later.
+- 2026-06-09: Verified in the consolidated app and marked completed. `src/main/main.ts` sets `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, denies window opens via `setWindowOpenHandler`, blocks `will-navigate`, and serves local assets through the privileged `mark-rover-file://` protocol. A strict CSP is set in `index.html`, the preload exposes only a narrow API (`src/preload/preload.ts`), and `link:open-external` rejects non-HTTP(S) protocols. Blocked scripts/iframes are asserted in `scripts/corpus-smoke.ts` and the boundary is exercised end-to-end in `tests/electron-smoke.ts`.

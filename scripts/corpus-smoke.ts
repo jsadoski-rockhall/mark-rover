@@ -29,6 +29,10 @@ for (const file of files) {
     continue;
   }
 
+  if (result.html.includes("�")) {
+    failures.push(`${file}: replacement character (U+FFFD) in rendered output`);
+  }
+
   if (/<script/i.test(result.html)) failures.push(`${file}: script tag survived`);
   if (/<iframe/i.test(result.html)) failures.push(`${file}: iframe tag survived`);
   if (/onerror=|onclick=/i.test(result.html)) failures.push(`${file}: event handler survived`);
@@ -59,6 +63,53 @@ for (const file of files) {
 
   if (file === "smoke.md" && !/href="#code-section"/.test(result.html)) {
     failures.push("smoke.md: anchor link missing");
+  }
+
+  if (file === "smoke.md" && result.meta.direction !== "ltr") {
+    failures.push("smoke.md: document direction should be inferred as ltr");
+  }
+
+  if (file === "non-english-glyphs.md") {
+    // One representative sample per script/glyph family. Each must survive
+    // worker rendering and sanitization byte-for-byte.
+    const glyphSamples = [
+      "smörgåsbord",
+      "Tiếng Việt",
+      "Ελληνικά",
+      "французских",
+      "ひらがな",
+      "視野無限廣",
+      "다람쥐",
+      "العربية",
+      "עברית",
+      "देवनागरी",
+      "தமிழ்",
+      "👩‍💻",
+      "∑ ∏ √ ∞",
+      "€ £ ¥ ₹",
+      "ffi ffl",
+      "grüße",
+      "λ = α + β × Δ"
+    ];
+    for (const sample of glyphSamples) {
+      if (!result.html.includes(sample)) {
+        failures.push(`non-english-glyphs.md: sample did not survive rendering: ${sample}`);
+      }
+    }
+  }
+
+  if (file === "rtl-mixed.md") {
+    if (result.meta.direction !== "rtl") {
+      failures.push("rtl-mixed.md: document direction should be inferred as rtl");
+    }
+    if (!/<p dir="ltr">/.test(result.html)) {
+      failures.push(
+        "rtl-mixed.md: LTR paragraph inside RTL document missing explicit dir attribute"
+      );
+    }
+    if (/<pre[^>]*dir="rtl"/.test(result.html)) {
+      failures.push("rtl-mixed.md: code block must not be marked rtl");
+    }
   }
 }
 

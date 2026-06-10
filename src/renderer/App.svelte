@@ -16,6 +16,7 @@
     ligatures: boolean;
     locale: Locale;
     treatment: Treatment;
+    codeLineNumbers: boolean;
   }
 
   const preferenceKey = "mark-rover.reader-preferences";
@@ -56,6 +57,7 @@
       copy: "Copy",
       copied: "Copied",
       locale: "Locale",
+      lineNumbers: "Line numbers",
       renderingDiagram: "Rendering diagram...",
       mermaidFailed: "Mermaid failed",
       tokens: "tokens",
@@ -84,6 +86,7 @@
       copy: "Copiar",
       copied: "Copiado",
       locale: "Idioma",
+      lineNumbers: "Números de línea",
       renderingDiagram: "Renderizando diagrama...",
       mermaidFailed: "Mermaid falló",
       tokens: "tokens",
@@ -96,13 +99,16 @@
       fontScript: "Script"
     }
   };
+  // Each stack ends with the platform emoji fonts so emoji never fall through
+  // to a glyphless last-resort font on Windows or Linux.
+  const emojiFallback = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"';
   const fontStacks: Record<FontKey, string> = {
-    serif: 'Georgia, Cambria, "Times New Roman", serif',
-    sans: 'Inter, ui-sans-serif, system-ui, sans-serif',
-    mono: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
-    slab: 'Rockwell, "Roboto Slab", "American Typewriter", serif',
-    comic: '"Comic Sans MS", "Comic Sans", cursive',
-    script: '"Snell Roundhand", "Brush Script MT", cursive'
+    serif: `Georgia, Cambria, "Times New Roman", serif, ${emojiFallback}`,
+    sans: `Inter, ui-sans-serif, system-ui, sans-serif, ${emojiFallback}`,
+    mono: `"SFMono-Regular", Consolas, "Liberation Mono", monospace, ${emojiFallback}`,
+    slab: `Rockwell, "Roboto Slab", "American Typewriter", serif, ${emojiFallback}`,
+    comic: `"Comic Sans MS", "Comic Sans", cursive, ${emojiFallback}`,
+    script: `"Snell Roundhand", "Brush Script MT", cursive, ${emojiFallback}`
   };
 
   let state: RenderState = {
@@ -120,7 +126,8 @@
     font: "serif",
     ligatures: true,
     locale: "en",
-    treatment: "broadsheet"
+    treatment: "broadsheet",
+    codeLineNumbers: false
   };
   let pretextStats: LayoutResult | null = null;
   let pendingExternalLink: string | null = null;
@@ -172,9 +179,31 @@
     if (!article) return;
 
     for (const pre of article.querySelectorAll("pre")) {
-      if (pre.dataset.copyEnhanced === "true") continue;
       const code = pre.querySelector("code");
       if (!code) continue;
+
+      // The gutter is always built; the line-numbers preference only toggles
+      // its visibility via the `show-line-numbers` class on the article. It
+      // sits outside <code>, so copy (which reads code.textContent) and text
+      // selection (user-select: none) never pick up the numbers.
+      if (
+        pre.dataset.lineNumbered !== "true" &&
+        !code.classList.contains("language-mermaid")
+      ) {
+        const codeText = (code.textContent ?? "").replace(/\n$/, "");
+        const lineCount = codeText === "" ? 1 : codeText.split("\n").length;
+        const gutter = document.createElement("span");
+        gutter.className = "line-number-gutter";
+        gutter.setAttribute("aria-hidden", "true");
+        gutter.textContent = Array.from({ length: lineCount }, (_, line) => String(line + 1)).join(
+          "\n"
+        );
+        pre.dataset.lineNumbered = "true";
+        pre.classList.add("line-numbered");
+        pre.prepend(gutter);
+      }
+
+      if (pre.dataset.copyEnhanced === "true") continue;
 
       const button = document.createElement("button");
       button.type = "button";
@@ -485,6 +514,15 @@
           />
           <span>{t.ligatures}</span>
         </label>
+        <label class="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={preferences.codeLineNumbers}
+            data-testid="line-numbers-toggle"
+            on:change={(event) => updatePreference("codeLineNumbers", event.currentTarget.checked)}
+          />
+          <span>{t.lineNumbers}</span>
+        </label>
       </div>
       {#if state.status === "ready"}
         <div>
@@ -502,7 +540,12 @@
         {state.error}
       </section>
     {:else}
-      <article class="reader prose-mark-rover" style={readerStyle} data-testid="document">{@html state.html}</article>
+      <article
+        class="reader prose-mark-rover"
+        class:show-line-numbers={preferences.codeLineNumbers}
+        style={readerStyle}
+        dir={state.meta?.direction ?? "ltr"}
+        data-testid="document">{@html state.html}</article>
     {/if}
   </div>
 </main>

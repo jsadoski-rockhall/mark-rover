@@ -1,6 +1,6 @@
 # Establish Domain Context and Decision Log
 
-Status: ready-for-agent
+Status: completed
 
 ## Goal
 
@@ -27,3 +27,4 @@ This repo uses a single-context domain docs layout. `CONTEXT.md` should be a glo
 ## Comments
 
 - 2026-06-01: Created `.prototype/01` as a context package with a small `pnpm check` script. Added root `CONTEXT.md` terms for Document, Prototype Candidate, Corpus, First Viewport Ready, and External Link. Deferred ADRs because no implementation trade-off has matured enough yet.
+- 2026-06-09: Verified in the consolidated app and marked completed. Root `CONTEXT.md` exists with the glossary terms (Document, Prototype Candidate, Corpus, First Viewport Ready, External Link) and no implementation details. `docs/adr/` intentionally absent, consistent with the acceptance criterion that no ADR exist merely to record an obvious or reversible choice.

@@ -1,6 +1,6 @@
 # Add Document Viewer Shell and Reading Controls
 
-Status: ready-for-agent
+Status: completed
 
 ## Goal
 
@@ -28,3 +28,4 @@ Add the smallest useful reading surface and controls without turning the prototy
 
 - 2026-06-01: Created `.prototype/07` by copying forward successful prototype 06. Added compact reader controls for 66/70/88 character measure, line-height slider, font family select, and ligature toggle. Preferences persist to local storage. System light/dark remains handled by CSS media dark mode. Scroll restoration during font switches is deferred. Pending install/check/test/bench verification.
 - 2026-06-01: `pnpm check` and `pnpm test` passed. One-iteration benchmark on `corpus/emoji-long-prose.md` emitted `first_viewport_ready` around 255 ms. Prototype 07 is successful.
+- 2026-06-09: Verified in the consolidated app and marked completed. `src/renderer/App.svelte` provides measure options of 66/70/88 characters, a line-height control, font choices for serif/sans/mono/slab/comic/script (with emoji-safe font stacks), and a ligatures toggle; preferences persist to local storage under a single preference key. System light/dark mode is honored via CSS media queries in `src/renderer/styles.css`, and the document remains the first-screen focus.

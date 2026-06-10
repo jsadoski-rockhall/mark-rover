@@ -1,6 +1,6 @@
 # Add Code Block Enhancements
 
-Status: ready-for-agent
+Status: completed
 
 ## Goal
 
@@ -23,3 +23,4 @@ Make code blocks useful without letting highlighting dominate the early prototyp
 
 - 2026-06-01: Created `.prototype/09` by copying forward successful prototype 08. Added `highlight.js` highlighting in the worker, allowed sanitized highlight spans/classes, added a preload/main clipboard bridge, and enhanced rendered `<pre>` blocks with copy buttons. Pending install/check/test/bench verification.
 - 2026-06-01: `pnpm check` and `pnpm test` passed. One-iteration benchmark on `corpus/code-heavy.md` emitted `first_viewport_ready` around 262 ms; worker render duration was about 15.5 ms with highlighting. Prototype 09 is successful.
+- 2026-06-09: Verified in the consolidated app and marked completed. `src/main/render-worker.ts` highlights fenced code with `highlight.js` (falling back to plain escaped code for unknown languages), `src/renderer/App.svelte` attaches a localized copy button to every `<pre>` block, and the copy action goes through the narrow `copyText` preload bridge to a `clipboard:write-text` handler in `src/main/main.ts`. Highlighting runs in the worker, off the startup path; `tests/corpus/code-heavy.md` exercises long lines, unknown languages, and many blocks.

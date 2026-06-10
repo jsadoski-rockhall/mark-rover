@@ -1,6 +1,6 @@
 # Add Startup Metrics and Benchmark Contract
 
-Status: ready-for-agent
+Status: completed
 
 ## Goal
 
@@ -32,3 +32,4 @@ The adversarial repo uses newline-delimited JSON metrics with events like `proce
 - 2026-06-01: Svelte 5 mount did not fix the missing renderer-originated metric. To keep benchmark work moving, added a benchmark-only main-process DOM probe after document update; it emits `first_viewport_ready` with `source: "main-dom-probe"` when the rendered document node has text. Follow-up: debug why preload/renderer acknowledgement is not observed.
 - 2026-06-01: Diagnostics showed no renderer console output because the Vite bundle was not loading under `loadFile`; fixed with `base: "./"` in Vite config.
 - 2026-06-01: `pnpm check` passed after the asset-path fix. One-iteration benchmark emitted renderer-originated `first_viewport_ready` around 299 ms and exited automatically. Prototype 03 is successful and becomes the last-known-good baseline.
+- 2026-06-09: Verified in the consolidated app and marked completed. `src/main/main.ts` gates metrics behind `MARK_ROVER_BENCH=1` and emits `process_start`, `first_paint`, `parse_done` (with byte counts and worker metadata), and `first_viewport_ready` (renderer-acknowledged via the `metric:first-viewport-ready` IPC channel, with a main-dom-probe fallback). `scripts/bench.ts` is the corpus benchmark runner, wired up as `pnpm bench`.

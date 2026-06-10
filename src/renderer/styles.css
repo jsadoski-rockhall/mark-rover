@@ -68,21 +68,60 @@ body {
 
 .prose-mark-rover code {
   border-radius: 4px;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", monospace, "Apple Color Emoji", "Segoe UI Emoji",
+    "Noto Color Emoji";
   font-size: 0.88em;
   padding: 0.1em 0.28em;
 }
 
+/* Code is always left-to-right, even inside RTL documents. */
 .prose-mark-rover pre {
   position: relative;
   border-radius: 8px;
   overflow-x: auto;
   padding: 1rem;
+  direction: ltr;
+  text-align: left;
 }
 
 .prose-mark-rover pre code {
   background: transparent;
   padding: 0;
+}
+
+/* Code block line numbers. The gutter is always present in the DOM; the
+   show-line-numbers class (bound to the reader preference) reveals it. The
+   pre becomes a two-column grid so the gutter and the code column share line
+   boxes, and the code column takes over horizontal scrolling so long lines
+   never slide under the numbers. */
+
+.line-number-gutter {
+  display: none;
+}
+
+.reader.show-line-numbers pre.line-numbered {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 0.9rem;
+  overflow-x: hidden;
+}
+
+.reader.show-line-numbers pre.line-numbered > .line-number-gutter {
+  display: block;
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", monospace, "Apple Color Emoji", "Segoe UI Emoji",
+    "Noto Color Emoji";
+  font-size: 0.88em;
+  opacity: 0.55;
+  text-align: right;
+  user-select: none;
+}
+
+.reader.show-line-numbers pre.line-numbered > code {
+  display: block;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .prose-mark-rover img {
@@ -118,7 +157,7 @@ body {
 .prose-mark-rover input[type="checkbox"] {
   cursor: pointer;
   height: 1rem;
-  margin-right: 0.45rem;
+  margin-inline-end: 0.45rem;
   vertical-align: -0.12em;
   width: 1rem;
 }
@@ -185,9 +224,9 @@ body {
 
 .treatment-broadsheet .prose-mark-rover h2 {
   font-size: 1.85rem;
-  border-left: 4px solid #e11d48;
-  padding-left: 0.55em;
-  margin-left: -0.7em;
+  border-inline-start: 4px solid #e11d48;
+  padding-inline-start: 0.55em;
+  margin-inline-start: -0.7em;
 }
 
 .treatment-broadsheet .reader > p:first-of-type::first-letter {
@@ -211,8 +250,8 @@ body {
   font-size: 1.5rem;
   line-height: 1.32;
   color: #1c1917;
-  border-left: 4px solid #e11d48;
-  padding-left: 1.1rem;
+  border-inline-start: 4px solid #e11d48;
+  padding-inline-start: 1.1rem;
   margin: 1.4em 0;
 }
 
@@ -230,7 +269,7 @@ body {
 
 .treatment-broadsheet .prose-mark-rover th {
   border-bottom: 2px solid #15110f;
-  text-align: left;
+  text-align: start;
 }
 
 .treatment-broadsheet .prose-mark-rover td {
@@ -288,9 +327,9 @@ body {
 
 .treatment-manuscript .prose-mark-rover blockquote {
   font-style: italic;
-  border-left: 3px solid #cbb89a;
+  border-inline-start: 3px solid #cbb89a;
   color: #5b4a3a;
-  padding-left: 1rem;
+  padding-inline-start: 1rem;
 }
 
 .treatment-manuscript .prose-mark-rover code {
@@ -335,7 +374,7 @@ body {
 
 .treatment-manuscript .prose-mark-rover th {
   border-bottom: 2px solid #cbb89a;
-  text-align: left;
+  text-align: start;
 }
 
 .treatment-manuscript .prose-mark-rover td {
@@ -398,9 +437,9 @@ body {
 }
 
 .treatment-console .prose-mark-rover h2 {
-  border-left: 3px solid #34d399;
-  padding-left: 0.6em;
-  margin-left: -0.75em;
+  border-inline-start: 3px solid #34d399;
+  padding-inline-start: 0.6em;
+  margin-inline-start: -0.75em;
 }
 
 .treatment-console .prose-mark-rover a {
@@ -413,7 +452,7 @@ body {
 }
 
 .treatment-console .prose-mark-rover blockquote {
-  border-left: 3px solid #22d3ee;
+  border-inline-start: 3px solid #22d3ee;
   background: rgb(34 211 238 / 0.06);
   color: #94a3b8;
   padding: 0.6rem 1rem;
@@ -441,7 +480,7 @@ body {
 .treatment-console .prose-mark-rover th {
   color: #6ee7b7;
   border-bottom: 2px solid #34d399;
-  text-align: left;
+  text-align: start;
 }
 
 .treatment-console .prose-mark-rover td {
@@ -646,7 +685,7 @@ body {
   }
 
   .treatment-broadsheet .prose-mark-rover h2 {
-    border-left-color: #fb7185;
+    border-inline-start-color: #fb7185;
   }
 
   .treatment-broadsheet .reader > p:first-of-type::first-letter {
@@ -659,7 +698,7 @@ body {
 
   .treatment-broadsheet .prose-mark-rover blockquote {
     color: #f4f4f5;
-    border-left-color: #fb7185;
+    border-inline-start-color: #fb7185;
   }
 
   .treatment-broadsheet .prose-mark-rover code {
@@ -717,7 +756,7 @@ body {
   }
 
   .treatment-manuscript .prose-mark-rover blockquote {
-    border-left-color: #4a4030;
+    border-inline-start-color: #4a4030;
     color: #c9bca6;
   }
 
