@@ -23,7 +23,8 @@
     "table:threshold": "node ./scripts/table-threshold.ts",
     "test:electron": "node ./tests/electron-smoke.ts && node ./tests/localization-smoke.ts && node ./tests/mermaid-smoke.ts",
     "cdp:launch": "MARK_ROVER_CDP_PORT=9222 electron . -- tests/corpus/smoke.md",
-    "package:mac": "pnpm build && node ./scripts/package-mac.ts"
+    "package:mac": "pnpm build && node ./scripts/package-mac.ts",
+    "package:win": "pnpm build && node ./scripts/package-win.ts"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.7",
