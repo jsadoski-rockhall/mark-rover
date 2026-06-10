@@ -30,6 +30,20 @@ await packager({
   arch: "arm64",
   out: "out",
   overwrite: true,
+  // A stable bundle id keeps LaunchServices from treating every rebuild as a
+  // new app when it resolves the .md association.
+  appBundleId: "org.markrover.prototype",
+  extendInfo: {
+    CFBundleDocumentTypes: [
+      {
+        CFBundleTypeName: "Markdown Document",
+        CFBundleTypeRole: "Viewer",
+        LSHandlerRank: "Default",
+        LSItemContentTypes: ["net.daringfireball.markdown"],
+        CFBundleTypeExtensions: ["md", "markdown", "mdown"]
+      }
+    ]
+  },
   // The render worker runs on worker_threads, which cannot load a module from
   // inside the asar archive; main.ts resolves it via app.asar.unpacked.
   asar: { unpack: "**/render-worker.cjs" },
