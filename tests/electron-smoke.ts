@@ -10,6 +10,16 @@ const app = await electron.launch({
 
 try {
   const page = await app.firstWindow();
+
+  // Playwright's locator/waitForFunction polling and the app's Pretext probe
+  // both run on requestAnimationFrame, which macOS pauses while the window is
+  // occluded. Keep the window unoccluded for the duration of the test.
+  await app.evaluate(({ BrowserWindow }) => {
+    const window = BrowserWindow.getAllWindows()[0];
+    window.setAlwaysOnTop(true);
+    window.show();
+  });
+
   await page.waitForSelector('[data-testid="document"]', { timeout: 5000 });
 
   const heading = await page.locator("h1").first().textContent();

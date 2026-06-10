@@ -441,6 +441,9 @@
     state = await window.markRover.getDocument();
     if (state.status === "ready") markReady();
     if (state.status === "ready") {
+      // The state assignment above has not flushed to the DOM yet, and the
+      // enhancers query the rendered article.
+      await tick();
       queuePretextProbe();
       enhanceCodeBlocks();
       enhanceTaskLists();
