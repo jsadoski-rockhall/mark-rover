@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@electron/packager': cf07fa08f8f48aa9990fc0dc6bc79d580282799d9ccbfe603bf20c3e3bfc748d
+
 importers:
 
   .:
@@ -47,7 +50,7 @@ importers:
     devDependencies:
       '@electron/packager':
         specifier: ^20.0.0
-        version: 20.0.0
+        version: 20.0.0(patch_hash=cf07fa08f8f48aa9990fc0dc6bc79d580282799d9ccbfe603bf20c3e3bfc748d)
       '@types/markdown-it':
         specifier: ^14.1.2
         version: 14.1.2
@@ -2629,7 +2632,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@electron/packager@20.0.0':
+  '@electron/packager@20.0.0(patch_hash=cf07fa08f8f48aa9990fc0dc6bc79d580282799d9ccbfe603bf20c3e3bfc748d)':
     dependencies:
       '@electron/asar': 4.2.0
       '@electron/get': 5.0.0

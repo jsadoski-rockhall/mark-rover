@@ -30,6 +30,8 @@ await packager({
   arch: "arm64",
   out: "out",
   overwrite: true,
-  asar: true,
+  // The render worker runs on worker_threads, which cannot load a module from
+  // inside the asar archive; main.ts resolves it via app.asar.unpacked.
+  asar: { unpack: "**/render-worker.cjs" },
   prune: true
 });
