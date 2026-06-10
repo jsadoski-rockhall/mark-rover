@@ -146,6 +146,7 @@ async function renderDocument(documentPath: string | null): Promise<void> {
   }
 
   currentDocument = { path: documentPath };
+  mainWindow?.setTitle(`Mark Rover - ${documentPath}`);
   renderState = { status: "loading", html: "", meta: {}, error: null };
   metric("file_read_start");
   const markdown = await readFile(documentPath, "utf8");
@@ -199,6 +200,21 @@ async function renderDocument(documentPath: string | null): Promise<void> {
   });
 }
 
+// macOS delivers double-clicked and drag-and-dropped Documents as open-file
+// events, never as argv. The event can arrive before `ready` (cold launch via
+// Finder), while the app is running, or after every window has been closed
+// (macOS keeps the app alive); each needs its own path into renderDocument.
+let pendingOpenFilePath: string | null = null;
+app.on("open-file", (event, path) => {
+  event.preventDefault();
+  if (!app.isReady()) {
+    pendingOpenFilePath = path;
+    return;
+  }
+  if (!mainWindow || mainWindow.isDestroyed()) createWindow();
+  void renderDocument(path);
+});
+
 ipcMain.handle("document:get", () => renderState);
 ipcMain.handle("clipboard:write-text", (_event, text) => {
   clipboard.writeText(String(text));
@@ -226,7 +242,8 @@ app.whenReady().then(async () => {
     const bytes = await readFile(filePath);
     return new Response(bytes);
   });
-  currentDocument = { path: getDocumentPath() };
+  currentDocument = { path: pendingOpenFilePath ?? getDocumentPath() };
+  pendingOpenFilePath = null;
   createWindow();
   await renderDocument(currentDocument.path);
 });
