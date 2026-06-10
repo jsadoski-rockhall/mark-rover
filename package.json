@@ -5,24 +5,25 @@
   "type": "module",
   "main": "dist/main/main.mjs",
   "scripts": {
-    "dev": "node ./scripts/dev.mjs",
+    "dev": "node ./scripts/dev.ts",
     "start": "electron .",
-    "postinstall": "node ./scripts/ensure-electron.mjs",
+    "postinstall": "node ./scripts/ensure-electron.ts",
     "build": "pnpm build:renderer && pnpm build:electron",
     "build:renderer": "vite build",
-    "build:electron": "node ./scripts/build-electron.mjs",
+    "build:electron": "node ./scripts/build-electron.ts",
     "lint": "oxlint .",
     "fmt": "oxfmt .",
     "fmt:check": "oxfmt --check .",
     "knip": "knip",
     "qa": "pnpm fmt:check && pnpm lint && pnpm knip && pnpm check && pnpm test",
-    "check": "node --check src/main/main.mjs && node --check src/main/render-worker.mjs && node --check src/preload/preload.cjs && node --check scripts/build-electron.mjs && node --check scripts/package-mac.mjs && node --check scripts/ensure-electron.mjs && node --check scripts/bench.mjs && node --check scripts/corpus-smoke.mjs && node --check scripts/table-threshold.mjs && node --check tests/electron-smoke.mjs && node --check tests/localization-smoke.mjs && pnpm build",
-    "bench": "node ./scripts/bench.mjs",
-    "test": "node ./scripts/corpus-smoke.mjs",
-    "table:threshold": "node ./scripts/table-threshold.mjs",
-    "test:electron": "node ./tests/electron-smoke.mjs && node ./tests/localization-smoke.mjs",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json && tsc -p tsconfig.node.json && tsc -p tsconfig.test.json",
+    "check": "pnpm typecheck && pnpm build",
+    "bench": "node ./scripts/bench.ts",
+    "test": "node ./scripts/corpus-smoke.ts",
+    "table:threshold": "node ./scripts/table-threshold.ts",
+    "test:electron": "node ./tests/electron-smoke.ts && node ./tests/localization-smoke.ts",
     "cdp:launch": "MARK_ROVER_CDP_PORT=9222 electron . -- tests/corpus/smoke.md",
-    "package:mac": "pnpm build && node ./scripts/package-mac.mjs"
+    "package:mac": "pnpm build && node ./scripts/package-mac.ts"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.7",
@@ -40,13 +41,18 @@
   },
   "devDependencies": {
     "@electron/packager": "^20.0.0",
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^24.12.4",
+    "@types/sanitize-html": "^2.16.1",
     "autoprefixer": "^10.4.22",
     "esbuild": "^0.28.0",
     "knip": "^6.15.0",
     "oxfmt": "^0.53.0",
     "oxlint": "^1.68.0",
     "playwright": "^1.60.0",
-    "postcss": "^8.5.6"
+    "postcss": "^8.5.6",
+    "svelte-check": "^4.5.0",
+    "typescript": "^6.0.3"
   },
   "packageManager": "pnpm@11.5.1"
 }
