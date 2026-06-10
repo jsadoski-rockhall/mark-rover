@@ -141,14 +141,16 @@
   };
   let pretextStats: LayoutResult | null = null;
   let fittedFontSize: number | null = null;
+  let adaptedLineHeight: number | null = null;
   let pendingExternalLink: string | null = null;
 
   $: effectiveFontSize =
     preferences.fitTextSize && fittedFontSize !== null ? fittedFontSize : preferences.fontSize;
+  $: effectiveLineHeight = adaptedLineHeight ?? preferences.lineHeight;
   $: readerStyle = [
     `--reader-measure: ${preferences.measure}ch`,
     `--reader-font-size: ${effectiveFontSize}px`,
-    `--reader-line-height: ${preferences.lineHeight}`,
+    `--reader-line-height: ${effectiveLineHeight}`,
     `--reader-font: ${fontStacks[preferences.font]}`,
     `--reader-ligatures: ${preferences.ligatures ? "common-ligatures contextual" : "none"}`
   ].join("; ");
@@ -172,27 +174,35 @@
     requestAnimationFrame(runPretextProbe);
   }
 
-  // Finds the largest font size (preferred at most, 12px at least) at which a
-  // representative line of `measure` characters fits the content width without
-  // wrapping. Pretext measures the real font, so the result tracks the actual
-  // glyph widths rather than a per-font width heuristic.
-  function computeFittedFontSize(article: Element): number {
+  function contentWidth(article: Element): number | null {
     const container = article.parentElement;
-    if (!container) return preferences.fontSize;
-
+    if (!container) return null;
     const containerStyles = getComputedStyle(container);
     const available =
       container.clientWidth -
       parseFloat(containerStyles.paddingLeft) -
       parseFloat(containerStyles.paddingRight);
-    if (!Number.isFinite(available) || available <= 0) return preferences.fontSize;
+    return Number.isFinite(available) && available > 0 ? available : null;
+  }
 
+  // A representative line of `measure` characters drawn from the document's own
+  // prose so pretext measures the glyphs the reader actually sees.
+  function referenceLine(article: Element): string {
     const fallback = "the quick brown fox jumps over the lazy dog and keeps on running ";
-    let reference =
-      article.querySelector("p")?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    let reference = article.querySelector("p")?.textContent?.replace(/\s+/g, " ").trim() ?? "";
     while (reference.length < preferences.measure) reference += ` ${fallback}`;
-    reference = reference.slice(0, preferences.measure);
+    return reference.slice(0, preferences.measure);
+  }
 
+  // Finds the largest font size (preferred at most, 12px at least) at which a
+  // representative line of `measure` characters fits the content width without
+  // wrapping. Pretext measures the real font, so the result tracks the actual
+  // glyph widths rather than a per-font width heuristic.
+  function computeFittedFontSize(article: Element): number {
+    const available = contentWidth(article);
+    if (available === null) return preferences.fontSize;
+
+    const reference = referenceLine(article);
     const fontAt = (size: number) => `${size}px ${fontStacks[preferences.font]}`;
     let size = preferences.fontSize;
     const naturalWidth = measureNaturalWidth(prepareWithSegments(reference, fontAt(size)));
@@ -210,6 +220,27 @@
     return size;
   }
 
+  // Narrow windows truncate the selected measure: the real line length is set
+  // by the window, not the preference. Typographically a shorter measure wants
+  // tighter leading, so scale line-height down toward a 1.45 floor in
+  // proportion to how much of the selected measure actually fits. Pretext's
+  // natural-width measurement makes "how much fits" glyph-accurate.
+  function computeNarrowLeading(article: Element, fontSize: number): number | null {
+    const floor = 1.45;
+    if (preferences.lineHeight <= floor) return null;
+
+    const available = contentWidth(article);
+    if (available === null) return null;
+
+    const naturalWidth = measureNaturalWidth(
+      prepareWithSegments(referenceLine(article), `${fontSize}px ${fontStacks[preferences.font]}`)
+    );
+    if (naturalWidth <= available) return null;
+
+    const ratio = available / naturalWidth;
+    return Math.round((floor + (preferences.lineHeight - floor) * ratio) * 100) / 100;
+  }
+
   function runPretextProbe(): void {
     const article = document.querySelector('[data-testid="document"]');
     const firstParagraph = article?.querySelector("p");
@@ -218,6 +249,7 @@
     fittedFontSize = preferences.fitTextSize ? computeFittedFontSize(article) : null;
     const fontSize =
       preferences.fitTextSize && fittedFontSize !== null ? fittedFontSize : preferences.fontSize;
+    adaptedLineHeight = computeNarrowLeading(article, fontSize);
     const width = Math.min(article.clientWidth || 720, preferences.measure * fontSize * 0.56);
     const lineHeightPx = fontSize * preferences.lineHeight;
     const prepared = prepare(
@@ -467,7 +499,8 @@
   }
 
   function handleWindowResize(): void {
-    if (preferences.fitTextSize) queuePretextProbe();
+    // Both fitted font size and narrow-window leading track the window width.
+    queuePretextProbe();
   }
 
   onMount(() => {
