@@ -24,10 +24,12 @@ try {
   // The first diagram sits in the initial viewport and must render to SVG.
   await page.waitForSelector(".mermaid-figure svg", { timeout: 15000 });
 
-  // The invalid diagram must surface a visible, non-fatal failure state.
+  // The invalid diagram must surface a visible, non-fatal failure state. The
+  // app's label is localized (the saved locale survives across launches), so
+  // assert on Mermaid's own diagnostic instead of the label text.
   await page.waitForSelector("pre.mermaid-error", { timeout: 15000 });
   const errorText = await page.locator("pre.mermaid-error").textContent();
-  if (!errorText?.includes("Mermaid failed")) {
+  if (!errorText?.includes("Parse error")) {
     throw new Error(`Invalid diagram did not show a useful failure state: ${errorText}`);
   }
 
