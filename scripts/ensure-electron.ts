@@ -18,7 +18,7 @@ import { dirname, join } from "node:path";
 
 const require = createRequire(import.meta.url);
 
-function resolveBinary() {
+function resolveBinary(): string | null {
   try {
     const binary = require("electron"); // reads dist/ + path.txt, throws if absent
     return typeof binary === "string" && existsSync(binary) ? binary : null;
@@ -33,10 +33,10 @@ if (resolveBinary()) {
 
 const electronPkg = require.resolve("electron/package.json");
 const electronDir = dirname(electronPkg);
-const { version } = require(electronPkg);
+const { version } = require(electronPkg) as { version: string };
 const distDir = join(electronDir, "dist");
 
-const platformPaths = {
+const platformPaths: Record<string, string> = {
   darwin: "Electron.app/Contents/MacOS/Electron",
   mas: "Electron.app/Contents/MacOS/Electron",
   win32: "electron.exe"

@@ -1,16 +1,32 @@
-<script>
+<script lang="ts">
   import { onMount, tick } from "svelte";
-  import { layout, prepare } from "@chenglou/pretext";
+  import { layout, prepare, type LayoutResult } from "@chenglou/pretext";
+  import type { RenderState } from "../shared/ipc.ts";
+
+  type Locale = "en" | "es";
+  type FontKey = "serif" | "sans" | "mono" | "slab" | "comic" | "script";
+  type Treatment = "broadsheet" | "manuscript" | "console";
+  type Messages = Record<string, string>;
+
+  interface ReaderPreferences {
+    measure: number;
+    fontSize: number;
+    lineHeight: number;
+    font: FontKey;
+    ligatures: boolean;
+    locale: Locale;
+    treatment: Treatment;
+  }
 
   const preferenceKey = "mark-rover.reader-preferences";
-  const widthOptions = [66, 70, 88];
-  const treatmentOptions = [
+  const widthOptions: number[] = [66, 70, 88];
+  const treatmentOptions: { key: string; value: Treatment }[] = [
     { key: "treatmentBroadsheet", value: "broadsheet" },
     { key: "treatmentManuscript", value: "manuscript" },
     { key: "treatmentConsole", value: "console" }
   ];
-  const treatmentValues = new Set(treatmentOptions.map((option) => option.value));
-  const fontOptions = [
+  const treatmentValues = new Set<Treatment>(treatmentOptions.map((option) => option.value));
+  const fontOptions: { key: string; value: FontKey }[] = [
     { key: "fontSerif", value: "serif" },
     { key: "fontSans", value: "sans" },
     { key: "fontMono", value: "mono" },
@@ -18,11 +34,11 @@
     { key: "fontComic", value: "comic" },
     { key: "fontScript", value: "script" }
   ];
-  const localeOptions = [
+  const localeOptions: { label: string; value: Locale }[] = [
     { label: "English", value: "en" },
     { label: "Español", value: "es" }
   ];
-  const messages = {
+  const messages: Record<Locale, Messages> = {
     en: {
       appName: "Mark Rover",
       lineWidth: "Line width",
@@ -80,7 +96,7 @@
       fontScript: "Script"
     }
   };
-  const fontStacks = {
+  const fontStacks: Record<FontKey, string> = {
     serif: 'Georgia, Cambria, "Times New Roman", serif',
     sans: 'Inter, ui-sans-serif, system-ui, sans-serif',
     mono: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
@@ -89,15 +105,15 @@
     script: '"Snell Roundhand", "Brush Script MT", cursive'
   };
 
-  let state = {
+  let state: RenderState = {
     status: "loading",
     html: "",
     meta: {},
     error: null
   };
-  function noop() {}
+  function noop(): void {}
 
-  let preferences = {
+  let preferences: ReaderPreferences = {
     measure: 70,
     fontSize: 18,
     lineHeight: 1.68,
@@ -106,8 +122,8 @@
     locale: "en",
     treatment: "broadsheet"
   };
-  let pretextStats = null;
-  let pendingExternalLink = null;
+  let pretextStats: LayoutResult | null = null;
+  let pendingExternalLink: string | null = null;
 
   $: readerStyle = [
     `--reader-measure: ${preferences.measure}ch`,
@@ -118,34 +134,40 @@
   ].join("; ");
   $: t = messages[preferences.locale] ?? messages.en;
 
-  function savePreferences() {
+  function savePreferences(): void {
     localStorage.setItem(preferenceKey, JSON.stringify(preferences));
   }
 
-  function updatePreference(key, value) {
+  function updatePreference<K extends keyof ReaderPreferences>(
+    key: K,
+    value: ReaderPreferences[K]
+  ): void {
     preferences = { ...preferences, [key]: value };
     savePreferences();
     queuePretextProbe();
   }
 
-  function queuePretextProbe() {
+  function queuePretextProbe(): void {
     if (localStorage.getItem("mark-rover.pretext-probe") === "off") return;
     requestAnimationFrame(runPretextProbe);
   }
 
-  function runPretextProbe() {
+  function runPretextProbe(): void {
     const article = document.querySelector('[data-testid="document"]');
     const firstParagraph = article?.querySelector("p");
-    if (!firstParagraph?.textContent) return;
+    if (!article || !firstParagraph?.textContent) return;
 
     const fontSize = preferences.fontSize;
     const width = Math.min(article.clientWidth || 720, preferences.measure * fontSize * 0.56);
     const lineHeightPx = fontSize * preferences.lineHeight;
-    const prepared = prepare(firstParagraph.textContent, `${fontSize}px ${fontStacks[preferences.font]}`);
+    const prepared = prepare(
+      firstParagraph.textContent,
+      `${fontSize}px ${fontStacks[preferences.font]}`
+    );
     pretextStats = layout(prepared, width, lineHeightPx);
   }
 
-  function enhanceCodeBlocks() {
+  function enhanceCodeBlocks(): void {
     const article = document.querySelector('[data-testid="document"]');
     if (!article) return;
 
@@ -171,7 +193,7 @@
     }
   }
 
-  function hashText(text) {
+  function hashText(text: string): string {
     let hash = 5381;
     for (let index = 0; index < text.length; index += 1) {
       hash = (hash * 33) ^ text.charCodeAt(index);
@@ -179,34 +201,36 @@
     return (hash >>> 0).toString(36);
   }
 
-  function enhanceTaskLists() {
+  function enhanceTaskLists(): void {
     const article = document.querySelector('[data-testid="document"]');
     const documentPath = state.meta?.documentPath ?? "untitled";
     if (!article) return;
 
-    article.querySelectorAll('input[type="checkbox"]').forEach((input, index) => {
-      if (input.dataset.taskEnhanced === "true") return;
+    article
+      .querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+      .forEach((input, index) => {
+        if (input.dataset.taskEnhanced === "true") return;
 
-      const labelText = input.closest("li")?.textContent?.trim() ?? `task-${index}`;
-      const key = `mark-rover.task:${documentPath}:${index}:${hashText(labelText)}`;
-      const saved = localStorage.getItem(key);
-      if (saved !== null) {
-        input.checked = saved === "true";
-      }
+        const labelText = input.closest("li")?.textContent?.trim() ?? `task-${index}`;
+        const key = `mark-rover.task:${documentPath}:${index}:${hashText(labelText)}`;
+        const saved = localStorage.getItem(key);
+        if (saved !== null) {
+          input.checked = saved === "true";
+        }
 
-      input.disabled = false;
-      input.dataset.taskEnhanced = "true";
-      input.addEventListener("change", () => {
-        localStorage.setItem(key, String(input.checked));
+        input.disabled = false;
+        input.dataset.taskEnhanced = "true";
+        input.addEventListener("change", () => {
+          localStorage.setItem(key, String(input.checked));
+        });
       });
-    });
   }
 
-  function enhanceLinks() {
+  function enhanceLinks(): void {
     const article = document.querySelector('[data-testid="document"]');
     if (!article) return;
 
-    article.querySelectorAll("a[href]").forEach((anchor) => {
+    article.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((anchor) => {
       if (anchor.dataset.linkEnhanced === "true") return;
       anchor.dataset.linkEnhanced = "true";
       anchor.addEventListener("click", (event) => {
@@ -222,8 +246,9 @@
     });
   }
 
-  function handleDocumentClick(event) {
-    const anchor = event.target?.closest?.("a[href]");
+  function handleDocumentClick(event: MouseEvent): void {
+    const target = event.target as Element | null;
+    const anchor = target?.closest("a[href]");
     if (!anchor) return;
     if (!anchor.closest('[data-testid="document"]')) return;
 
@@ -237,14 +262,16 @@
     }
   }
 
-  function enhanceTables() {
+  function enhanceTables(): void {
     const article = document.querySelector('[data-testid="document"]');
     if (!article) return;
 
     article.querySelectorAll("table").forEach((table) => {
       if (table.dataset.tableEnhanced === "true") return;
       const rowCount = table.querySelectorAll("tbody tr").length;
-      const columnCount = table.querySelectorAll("thead th").length || table.querySelectorAll("tr:first-child > *").length;
+      const columnCount =
+        table.querySelectorAll("thead th").length ||
+        table.querySelectorAll("tr:first-child > *").length;
       table.dataset.tableEnhanced = "true";
       table.dataset.rows = String(rowCount);
       table.dataset.columns = String(columnCount);
@@ -254,7 +281,7 @@
     });
   }
 
-  function enhanceMermaid() {
+  function enhanceMermaid(): void {
     const article = document.querySelector('[data-testid="document"]');
     if (!article) return;
 
@@ -266,7 +293,7 @@
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
           observer.unobserve(entry.target);
-          renderMermaidBlock(entry.target);
+          renderMermaidBlock(entry.target as HTMLElement);
         }
       },
       { rootMargin: "420px 0px" }
@@ -283,7 +310,7 @@
     });
   }
 
-  async function renderMermaidBlock(pre) {
+  async function renderMermaidBlock(pre: HTMLElement): Promise<void> {
     const code = pre.querySelector("code");
     if (!code) return;
 
@@ -309,22 +336,22 @@
     }
   }
 
-  async function approveExternalLink() {
+  async function approveExternalLink(): Promise<void> {
     if (!pendingExternalLink) return;
     const href = pendingExternalLink;
     pendingExternalLink = null;
     await window.markRover.openExternalLink(href);
   }
 
-  async function markReady() {
+  async function markReady(): Promise<void> {
     await tick();
     window.markRover?.firstViewportReady();
   }
 
-  async function initializeDocument() {
+  async function initializeDocument(): Promise<() => void> {
     const saved = localStorage.getItem(preferenceKey);
     if (saved) {
-      preferences = { ...preferences, ...JSON.parse(saved) };
+      preferences = { ...preferences, ...(JSON.parse(saved) as Partial<ReaderPreferences>) };
     }
     if (!treatmentValues.has(preferences.treatment)) {
       preferences = { ...preferences, treatment: "broadsheet" };
@@ -355,7 +382,7 @@
   }
 
   onMount(() => {
-    let unsubscribeDocumentUpdates = noop;
+    let unsubscribeDocumentUpdates: () => void = noop;
     document.addEventListener("click", handleDocumentClick, true);
     initializeDocument().then((unsubscribe) => {
       unsubscribeDocumentUpdates = unsubscribe;
@@ -433,7 +460,7 @@
         <select
           class="rounded border border-slate-300 bg-white px-2 py-1 text-slate-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           value={preferences.font}
-          on:change={(event) => updatePreference("font", event.currentTarget.value)}
+          on:change={(event) => updatePreference("font", event.currentTarget.value as FontKey)}
         >
           {#each fontOptions as option}
             <option value={option.value}>{t[option.key]}</option>
@@ -444,7 +471,7 @@
           value={preferences.locale}
           aria-label={t.locale}
           data-testid="locale-select"
-          on:change={(event) => updatePreference("locale", event.currentTarget.value)}
+          on:change={(event) => updatePreference("locale", event.currentTarget.value as Locale)}
         >
           {#each localeOptions as option}
             <option value={option.value}>{option.label}</option>

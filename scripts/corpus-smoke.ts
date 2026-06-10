@@ -1,21 +1,23 @@
 import { Worker } from "node:worker_threads";
 import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import type { RenderWorkerData, WorkerResult } from "../src/shared/ipc.ts";
 
 const corpusDir = resolve(process.cwd(), "tests/corpus");
 const files = (await readdir(corpusDir)).filter((file) => file.endsWith(".md")).toSorted();
 
-function renderMarkdown(markdown, documentPath) {
+function renderMarkdown(markdown: string, documentPath: string): Promise<WorkerResult> {
   return new Promise((resolveRender, rejectRender) => {
-    const worker = new Worker(resolve(process.cwd(), "src/main/render-worker.mjs"), {
-      workerData: { markdown, documentPath }
+    const workerData: RenderWorkerData = { markdown, documentPath };
+    const worker = new Worker(resolve(process.cwd(), "src/main/render-worker.ts"), {
+      workerData
     });
     worker.once("message", resolveRender);
     worker.once("error", rejectRender);
   });
 }
 
-const failures = [];
+const failures: string[] = [];
 
 for (const file of files) {
   const documentPath = resolve(corpusDir, file);

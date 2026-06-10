@@ -1,6 +1,10 @@
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import electron from "electron";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+// Outside the Electron runtime, requiring "electron" yields the binary path.
+const electronPath: string = require("electron");
 
 const args = process.argv.slice(2);
 const vite = spawn("pnpm", ["exec", "vite", "--host", "127.0.0.1"], {
@@ -8,12 +12,12 @@ const vite = spawn("pnpm", ["exec", "vite", "--host", "127.0.0.1"], {
   env: process.env
 });
 
-let resolveDevUrl;
-const devUrlReady = new Promise((resolve) => {
+let resolveDevUrl!: (url: string) => void;
+const devUrlReady = new Promise<string>((resolve) => {
   resolveDevUrl = resolve;
 });
 
-vite.stdout.on("data", (chunk) => {
+vite.stdout?.on("data", (chunk: Buffer) => {
   const text = String(chunk);
   process.stdout.write(text);
   const match = text.match(/http:\/\/127\.0\.0\.1:(\d+)\//);
@@ -27,7 +31,7 @@ const devUrl = await Promise.race([
   once(vite, "exit").then(([code]) => process.exit(code ?? 1))
 ]);
 
-const electronProcess = spawn(electron, [".", "--", ...args], {
+const electronProcess = spawn(electronPath, [".", "--", ...args], {
   stdio: "inherit",
   env: {
     ...process.env,

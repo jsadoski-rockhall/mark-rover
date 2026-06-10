@@ -1,26 +1,35 @@
-import { createTable, getCoreRowModel } from "@tanstack/table-core";
+import { createTable, getCoreRowModel, type ColumnDef } from "@tanstack/table-core";
+
+interface FeatureRow {
+  feature: string;
+  status: string;
+  owner: string;
+}
 
 const threshold = {
   rows: 8,
   columns: 6
 };
 
-const sampleData = Array.from({ length: 12 }, (_row, index) => ({
+const sampleData: FeatureRow[] = Array.from({ length: 12 }, (_row, index) => ({
   feature: `Feature ${index + 1}`,
   status: index % 2 === 0 ? "ready" : "watch",
   owner: "reader"
 }));
 
-const columns = [
+const columns: ColumnDef<FeatureRow>[] = [
   { accessorKey: "feature", header: "Feature" },
   { accessorKey: "status", header: "Status" },
   { accessorKey: "owner", header: "Owner" }
 ];
 
-const table = createTable({
+const table = createTable<FeatureRow>({
   data: sampleData,
   columns,
-  getCoreRowModel: getCoreRowModel()
+  getCoreRowModel: getCoreRowModel(),
+  state: {},
+  onStateChange: () => {},
+  renderFallbackValue: null
 });
 
 const rowCount = table.getRowModel().rows.length;

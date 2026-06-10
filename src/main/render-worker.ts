@@ -4,10 +4,18 @@ import sanitizeHtml from "sanitize-html";
 import hljs from "highlight.js";
 import { dirname, isAbsolute, resolve } from "node:path";
 import { parentPort, workerData } from "node:worker_threads";
+import type { RenderWorkerData, WorkerResult } from "../shared/ipc.ts";
 
+const input = workerData as RenderWorkerData;
 const startedAt = performance.now();
 
-const md = new MarkdownIt({
+function post(result: WorkerResult): void {
+  parentPort?.postMessage(result);
+}
+
+// Explicit annotation: `highlight` references `md`, so without it the
+// initializer is self-referential and TypeScript infers `any`.
+const md: MarkdownIt = new MarkdownIt({
   html: true,
   linkify: true,
   typographer: true,
@@ -24,18 +32,18 @@ const md = new MarkdownIt({
   labelAfter: true
 });
 
-function slugify(text) {
+function slugify(text: string): string {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[`~!@#$%^&*()+=\u005B\]{}\\|;:'",.<>/?]/g, "")
+    .replace(/[`~!@#$%^&*()+=[\]{}\\|;:'",.<>/?]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 }
 
 md.core.ruler.push("mark_rover_heading_anchors", (state) => {
-  const seen = new Map();
+  const seen = new Map<string, number>();
 
   for (let index = 0; index < state.tokens.length; index += 1) {
     const token = state.tokens[index];
@@ -55,13 +63,15 @@ const defaultImage = md.renderer.rules.image;
 md.renderer.rules.image = (tokens, idx, options, env, self) => {
   const src = tokens[idx].attrGet("src");
   if (src && !/^(https?:|data:|mark-rover-file:)/i.test(src)) {
-    const baseDir = dirname(workerData.documentPath);
+    const baseDir = dirname(input.documentPath);
     const assetPath = isAbsolute(src) ? src : resolve(baseDir, src);
     tokens[idx].attrSet("src", `mark-rover-file://${encodeURIComponent(assetPath)}`);
   }
   tokens[idx].attrSet("loading", "lazy");
   tokens[idx].attrSet("decoding", "async");
-  return defaultImage(tokens, idx, options, env, self);
+  return defaultImage
+    ? defaultImage(tokens, idx, options, env, self)
+    : self.renderToken(tokens, idx, options);
 };
 
 const defaultLinkOpen = md.renderer.rules.link_open;
@@ -94,7 +104,7 @@ const allowedTags = sanitizeHtml.defaults.allowedTags.concat([
 ]);
 
 try {
-  const tokens = md.parse(workerData.markdown, {});
+  const tokens = md.parse(input.markdown, {});
   const rendered = md.renderer.render(tokens, md.options, {});
   const html = sanitizeHtml(rendered, {
     allowedTags,
@@ -115,7 +125,7 @@ try {
     }
   });
 
-  parentPort.postMessage({
+  post({
     ok: true,
     html,
     meta: {
@@ -128,7 +138,7 @@ try {
     }
   });
 } catch (error) {
-  parentPort.postMessage({
+  post({
     ok: false,
     error: error instanceof Error ? error.message : String(error)
   });

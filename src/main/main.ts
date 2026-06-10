@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 import { Worker } from "node:worker_threads";
 import { fileURLToPath } from "node:url";
+import type { RenderState, RenderWorkerData, WorkerResult } from "../shared/ipc.ts";
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -26,9 +27,9 @@ if (cdpPort) {
   app.commandLine.appendSwitch("remote-debugging-port", cdpPort);
 }
 
-let mainWindow;
-let currentDocument = null;
-let renderState = {
+let mainWindow: BrowserWindow | undefined;
+let currentDocument: { path: string | null } | null = null;
+let renderState: RenderState = {
   status: "idle",
   html: "",
   meta: {},
@@ -36,10 +37,11 @@ let renderState = {
 };
 let firstViewportReadyEmitted = false;
 
-async function markFirstViewportReadyFromDomProbe() {
+async function markFirstViewportReadyFromDomProbe(): Promise<void> {
   if (!bench || !mainWindow) return;
+  const win = mainWindow;
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const result = await mainWindow.webContents.executeJavaScript(
+    const result = await win.webContents.executeJavaScript(
       "Boolean(document.querySelector('[data-testid=\"document\"]')?.textContent?.trim())"
     );
     if (result) {
@@ -50,7 +52,7 @@ async function markFirstViewportReadyFromDomProbe() {
   }
 }
 
-function metric(event, extra = {}) {
+function metric(event: string, extra: Record<string, unknown> = {}): void {
   if (!bench) return;
   if (event === "first_viewport_ready") {
     if (firstViewportReadyEmitted) return;
@@ -64,7 +66,7 @@ function metric(event, extra = {}) {
   }
 }
 
-function getRenderWorkerPath() {
+function getRenderWorkerPath(): string {
   const bundledPath = resolve(here, "render-worker.cjs");
   if (!app.isPackaged) return bundledPath;
 
@@ -75,16 +77,16 @@ function getRenderWorkerPath() {
   return existsSync(unpackedPath) ? unpackedPath : bundledPath;
 }
 
-function getDocumentPath() {
+function getDocumentPath(): string | null {
   const marker = process.argv.lastIndexOf("--");
   const rawPath = marker >= 0 ? process.argv[marker + 1] : process.argv.at(-1);
   if (!rawPath || rawPath === "." || rawPath.endsWith("electron")) return null;
   return isAbsolute(rawPath) ? rawPath : resolve(process.cwd(), rawPath);
 }
 
-function createWindow() {
+function createWindow(): void {
   metric("window_requested");
-  mainWindow = new BrowserWindow({
+  const win = new BrowserWindow({
     width: 980,
     height: 760,
     minWidth: 420,
@@ -101,37 +103,38 @@ function createWindow() {
       allowRunningInsecureContent: false
     }
   });
+  mainWindow = win;
 
-  mainWindow.once("ready-to-show", () => {
+  win.once("ready-to-show", () => {
     metric("window_ready");
-    mainWindow.show();
+    win.show();
   });
 
-  mainWindow.webContents.on("did-finish-load", () => {
+  win.webContents.on("did-finish-load", () => {
     metric("first_paint");
   });
 
-  mainWindow.webContents.on("console-message", (_event, level, message) => {
+  win.webContents.on("console-message", (_event, level, message) => {
     metric("renderer_console", { level, message });
   });
 
-  mainWindow.webContents.on("preload-error", (_event, preloadPath, error) => {
+  win.webContents.on("preload-error", (_event, preloadPath, error) => {
     metric("preload_error", { preloadPath, message: error.message });
   });
 
-  mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-  mainWindow.webContents.on("will-navigate", (event) => {
+  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  win.webContents.on("will-navigate", (event) => {
     event.preventDefault();
   });
 
   if (rendererUrl) {
-    mainWindow.loadURL(rendererUrl);
+    win.loadURL(rendererUrl);
   } else {
-    mainWindow.loadFile(resolve(here, "../../dist/renderer/index.html"));
+    win.loadFile(resolve(here, "../../dist/renderer/index.html"));
   }
 }
 
-async function renderDocument(documentPath) {
+async function renderDocument(documentPath: string | null): Promise<void> {
   if (!documentPath) {
     renderState = {
       status: "ready",
@@ -149,11 +152,10 @@ async function renderDocument(documentPath) {
   metric("file_read_done", { bytes: Buffer.byteLength(markdown) });
   metric("parse_start");
 
-  const worker = new Worker(getRenderWorkerPath(), {
-    workerData: { markdown, documentPath }
-  });
+  const workerData: RenderWorkerData = { markdown, documentPath };
+  const worker = new Worker(getRenderWorkerPath(), { workerData });
 
-  worker.once("message", (message) => {
+  worker.once("message", (message: WorkerResult) => {
     if (message.ok) {
       metric("parse_done", { bytes: Buffer.byteLength(markdown), ...message.meta });
       renderState = {
@@ -162,7 +164,7 @@ async function renderDocument(documentPath) {
         meta: { ...message.meta, documentPath },
         error: null
       };
-      metric("model_ready", message.meta);
+      metric("model_ready", { ...message.meta });
     } else {
       renderState = {
         status: "error",
@@ -177,13 +179,13 @@ async function renderDocument(documentPath) {
     }
   });
 
-  worker.once("error", (error) => {
+  worker.once("error", (error: Error) => {
     metric("parse_error", { message: error.message });
     renderState = { status: "error", html: "", meta: {}, error: error.message };
     mainWindow?.webContents.send("document:update", renderState);
   });
 
-  worker.once("exit", (code) => {
+  worker.once("exit", (code: number) => {
     if (code !== 0 && renderState.status === "loading") {
       metric("parse_exit", { code });
       renderState = {

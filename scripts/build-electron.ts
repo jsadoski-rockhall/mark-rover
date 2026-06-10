@@ -5,7 +5,7 @@ await mkdir("dist/main", { recursive: true });
 await mkdir("dist/preload", { recursive: true });
 
 await build({
-  entryPoints: ["src/main/main.mjs"],
+  entryPoints: ["src/main/main.ts"],
   outfile: "dist/main/main.mjs",
   bundle: true,
   platform: "node",
@@ -16,7 +16,7 @@ await build({
 });
 
 await build({
-  entryPoints: ["src/main/render-worker.mjs"],
+  entryPoints: ["src/main/render-worker.ts"],
   outfile: "dist/main/render-worker.cjs",
   bundle: true,
   platform: "node",
@@ -26,7 +26,7 @@ await build({
 });
 
 await build({
-  entryPoints: ["src/preload/preload.cjs"],
+  entryPoints: ["src/preload/preload.ts"],
   outfile: "dist/preload/preload.cjs",
   bundle: true,
   platform: "node",

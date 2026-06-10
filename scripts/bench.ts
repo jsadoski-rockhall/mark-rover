@@ -2,7 +2,19 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import electron from "electron";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+// Outside the Electron runtime, requiring "electron" yields the binary path.
+const electronPath: string = require("electron");
+
+interface BenchResult {
+  iteration: number;
+  code: number | null;
+  signal: NodeJS.Signals | null;
+  elapsedMs: number;
+  metrics: unknown[];
+}
 
 const cliArgs = process.argv.slice(2).filter((arg) => arg !== "--");
 const file = resolve(cliArgs[0] ?? ".scratch/markdown-viewer-prototypes/PRD.md");
@@ -13,11 +25,11 @@ if (!existsSync(file)) {
   process.exit(1);
 }
 
-const results = [];
+const results: BenchResult[] = [];
 
 for (let iteration = 1; iteration <= iterations; iteration += 1) {
   const startedAt = performance.now();
-  const child = spawn(electron, [".", "--", file], {
+  const child = spawn(electronPath, [".", "--", file], {
     cwd: process.cwd(),
     env: {
       ...process.env,
@@ -26,8 +38,8 @@ for (let iteration = 1; iteration <= iterations; iteration += 1) {
     stdio: ["ignore", "pipe", "inherit"]
   });
 
-  const metrics = [];
-  child.stdout.on("data", (chunk) => {
+  const metrics: unknown[] = [];
+  child.stdout?.on("data", (chunk: Buffer) => {
     for (const line of String(chunk).split("\n")) {
       if (!line.trim()) continue;
       try {
