@@ -1,6 +1,8 @@
 import { packager } from "@electron/packager";
+import { execFile } from "node:child_process";
 import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { promisify } from "node:util";
 
 const stagingDir = resolve(process.cwd(), ".packager/app");
 
@@ -49,3 +51,15 @@ await packager({
   asar: { unpack: "**/render-worker.cjs" },
   prune: true
 });
+
+// LaunchServices refuses to persist a default-handler claim ("Always open
+// with") for an unsigned app, so .md association silently falls back to the
+// previous default. An ad-hoc signature is enough for local use; replace with
+// Developer ID signing for distribution.
+await promisify(execFile)("codesign", [
+  "--force",
+  "--deep",
+  "-s",
+  "-",
+  "out/MarkRover-darwin-arm64/MarkRover.app"
+]);
