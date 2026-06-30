@@ -8,5 +8,6 @@
     "scripts/*.ts",
     "tests/*.ts"
   ],
-  "project": ["src/**/*.{ts,svelte}", "scripts/**/*.ts", "tests/**/*.ts"]
+  "project": ["src/**/*.{ts,svelte}", "scripts/**/*.ts", "tests/**/*.ts"],
+  "ignoreDependencies": ["tailwindcss"]
 }

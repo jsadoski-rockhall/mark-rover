@@ -1,6 +1,9 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --font-reader: Georgia, Cambria, "Times New Roman", serif;
+  --font-ui: Inter, ui-sans-serif, system-ui, sans-serif;
+}
 
 :root {
   color-scheme: light dark;
@@ -18,9 +21,10 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   Shared reader + prose base. The three treatments below (Broadsheet,
-   Manuscript, Console) override surfaces, hierarchy, accents, code framing,
-   quotes, and tables to create three deliberately distinct reading moods.
+   Shared reader + prose base. The three calm treatments below (Fog, Sage,
+   Dusk) override surfaces, ink, accents, code framing, quotes, and tables to
+   create three low-contrast, restful reading moods — a cool light page, a
+   warm green light page, and a warm dark page.
    --------------------------------------------------------------------------- */
 
 .reader {
@@ -179,6 +183,174 @@ body {
   color: white;
 }
 
+/* Bottom control islands (see src/renderer/control-island-prototype/). The
+   reader's typesetting controls live here, off the page so reading stays calm.
+   Three variants — Rail / Stack / Cue — share this token system and control
+   chrome; each defines its own surface and layout in its component. The
+   autoHide action toggles .island-hidden. */
+
+.island-layer {
+  /* Calm ink-on-paper palette, distinct from the page's reading surface so the
+     controls read as a separate instrument, not part of the document. */
+  --isl-paper: #fcfbf9;
+  --isl-ink: #1c1917;
+  --isl-muted: #79716b;
+  --isl-rule: rgb(28 25 23 / 0.1);
+  --isl-rule-strong: rgb(28 25 23 / 0.22);
+  --isl-field: rgb(28 25 23 / 0.04);
+  --isl-shadow: 0 6px 22px rgb(28 25 23 / 0.13);
+
+  align-items: flex-end;
+  bottom: 1.1rem;
+  color: var(--isl-muted);
+  display: flex;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8125rem;
+  inset-inline: 0;
+  justify-content: center;
+  padding-inline: 1.25rem;
+  pointer-events: none;
+  position: fixed;
+  z-index: 10;
+}
+
+/* Stack variant anchors its card to the trailing gutter, clear of the
+   centred reading column. */
+.island-layer-end {
+  justify-content: flex-end;
+}
+
+/* Shared autohide target. Each variant paints its own surface; this only
+   carries the fade transition and re-enables pointer events. */
+.island {
+  color: var(--isl-ink);
+  pointer-events: auto;
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
+}
+
+.island-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(0.5rem);
+}
+
+/* Specimen micro-label: a typographer's-tray caption above each control. */
+.isl-label {
+  color: var(--isl-muted);
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.isl-readout {
+  color: var(--isl-ink);
+  font-size: 0.8rem;
+  min-width: 1.5rem;
+  text-align: right;
+}
+
+.isl-checkline {
+  align-items: center;
+  color: var(--isl-ink);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.8rem;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.isl-check {
+  accent-color: var(--isl-ink);
+  cursor: pointer;
+  height: 0.9rem;
+  margin: 0;
+  width: 0.9rem;
+}
+
+/* Thin ink slider — a ruled track with a small inked thumb, replacing the
+   chunky default control. */
+.isl-range {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+  height: 1rem;
+  margin: 0;
+  vertical-align: middle;
+  width: 5rem;
+}
+
+.isl-range-wide {
+  width: 6.5rem;
+}
+
+.isl-range::-webkit-slider-runnable-track {
+  background: var(--isl-rule-strong);
+  border-radius: 2px;
+  height: 2px;
+}
+
+.isl-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--isl-ink);
+  border: 2px solid var(--isl-paper);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgb(28 25 23 / 0.3);
+  height: 12px;
+  margin-top: -5px;
+  width: 12px;
+}
+
+.isl-range:focus-visible {
+  outline: none;
+}
+
+.isl-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--isl-rule);
+}
+
+.island-group {
+  align-items: center;
+  border: 0;
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+}
+
+.island-divider {
+  align-self: stretch;
+  background: var(--isl-rule);
+  width: 1px;
+}
+
+.island-select {
+  background: var(--isl-field);
+  border: 1px solid var(--isl-rule-strong);
+  border-radius: 8px;
+  color: var(--isl-ink);
+  font-family: inherit;
+  font-size: 0.78rem;
+  padding: 0.28rem 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .island {
+    transition: opacity 0.45s ease;
+  }
+
+  .island-hidden {
+    transform: none;
+  }
+}
+
 .copy-code-button {
   background: rgb(248 250 252 / 0.92);
   border: 1px solid rgb(203 213 225 / 0.4);
@@ -194,346 +366,351 @@ body {
 }
 
 /* ===========================================================================
-   TREATMENT 1 — BROADSHEET
-   Bright modern magazine. Huge sans display headings, a single bold accent,
-   a drop cap on the opening paragraph, dramatic serif pull-quotes, and a
-   framed dark code block — pushed further.
+   TREATMENT 1 — FOG
+   Cool, light, airy. Soft blue-gray paper and a deep desaturated slate ink
+   (never pure black) for gentle contrast, with a muted slate-blue accent.
+   Clean sans headings; thin accent rules instead of heavy borders. The mood
+   of reading by even, north-facing window light.
    =========================================================================== */
 
-.treatment-broadsheet {
-  background: radial-gradient(120% 70% at 50% -10%, #ffffff 0%, #fbfaf8 60%, #f4f2ee 100%);
+.treatment-fog {
+  background: linear-gradient(180deg, #eef2f5 0%, #e4eaef 100%);
 }
 
-.treatment-broadsheet .reader {
-  color: #15110f;
+.treatment-fog .reader {
+  color: #2f3a45;
 }
 
-.treatment-broadsheet .prose-mark-rover :where(h1, h2, h3, h4) {
+.treatment-fog .prose-mark-rover :where(h1, h2, h3, h4) {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.treatment-broadsheet .prose-mark-rover h1 {
-  font-size: clamp(2.4rem, 5vw, 3.1rem);
-  letter-spacing: -0.03em;
-  line-height: 1.04;
-  border-top: 4px solid #e11d48;
-  padding-top: 0.38em;
-}
-
-.treatment-broadsheet .prose-mark-rover h2 {
-  font-size: 1.85rem;
-  border-inline-start: 4px solid #e11d48;
-  padding-inline-start: 0.55em;
-  margin-inline-start: -0.7em;
-}
-
-.treatment-broadsheet .reader > p:first-of-type::first-letter {
-  float: left;
-  font-family: Georgia, Cambria, "Times New Roman", serif;
-  font-size: 3.4em;
-  font-weight: 800;
-  line-height: 0.78;
-  margin: 0.02em 0.12em 0 0;
-  color: #e11d48;
-}
-
-.treatment-broadsheet .prose-mark-rover a {
-  color: #e11d48;
   font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #1f2a35;
 }
 
-.treatment-broadsheet .prose-mark-rover blockquote {
-  font-family: Georgia, Cambria, "Times New Roman", serif;
-  font-style: italic;
-  font-size: 1.5rem;
-  line-height: 1.32;
-  color: #1c1917;
-  border-inline-start: 4px solid #e11d48;
-  padding-inline-start: 1.1rem;
-  margin: 1.4em 0;
+.treatment-fog .prose-mark-rover h2 {
+  border-bottom: 1px solid #cfd9e1;
+  padding-bottom: 0.22em;
 }
 
-.treatment-broadsheet .prose-mark-rover code {
-  background: #f1f5f9;
-  color: #be123c;
+.treatment-fog .prose-mark-rover a {
+  color: #4f7184;
 }
 
-.treatment-broadsheet .prose-mark-rover pre {
-  background: #0f172a;
-  color: #e2e8f0;
-  border: 1px solid #1f2937;
-  border-top: 3px solid #e11d48;
-}
-
-.treatment-broadsheet .prose-mark-rover th {
-  border-bottom: 2px solid #15110f;
-  text-align: start;
-}
-
-.treatment-broadsheet .prose-mark-rover td {
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.treatment-broadsheet .prose-mark-rover .large-markdown-table th {
-  background: #ffffff;
-}
-
-.treatment-broadsheet .prose-mark-rover input[type="checkbox"] {
-  accent-color: #e11d48;
-}
-
-.treatment-broadsheet .control-button:hover,
-.treatment-broadsheet .control-button.active-control {
-  background: #15110f;
-  border-color: #15110f;
-}
-
-.treatment-broadsheet .primary-action {
-  background: #e11d48;
-}
-
-/* ===========================================================================
-   TREATMENT 2 — MANUSCRIPT
-   Warm classic book. Cream paper, ink-brown text, fully serif (headings too),
-   a muted sienna accent, light parchment code blocks, and hairline rules.
-   Low contrast, library-quiet.
-   =========================================================================== */
-
-.treatment-manuscript {
-  background: radial-gradient(120% 80% at 50% 0%, #faf6ec 0%, #f1e8d6 100%);
-}
-
-.treatment-manuscript .reader {
-  color: #2a2521;
-}
-
-.treatment-manuscript .prose-mark-rover :where(h1, h2, h3, h4) {
-  font-family: Georgia, Cambria, "Times New Roman", serif;
-  font-weight: 700;
-  color: #1f1b18;
-}
-
-.treatment-manuscript .prose-mark-rover h2 {
-  border-bottom: 1px solid #d8c8a8;
-  padding-bottom: 0.25em;
-  letter-spacing: 0.01em;
-}
-
-.treatment-manuscript .prose-mark-rover a {
-  color: #9a3412;
-}
-
-.treatment-manuscript .prose-mark-rover blockquote {
-  font-style: italic;
-  border-inline-start: 3px solid #cbb89a;
-  color: #5b4a3a;
+.treatment-fog .prose-mark-rover blockquote {
+  border-inline-start: 3px solid #b3c4cf;
+  color: #4a5763;
   padding-inline-start: 1rem;
 }
 
-.treatment-manuscript .prose-mark-rover code {
-  background: #ece2cd;
-  border: 1px solid #ddcdaf;
-  color: #5b3a1a;
+.treatment-fog .prose-mark-rover code {
+  background: rgb(79 113 132 / 0.1);
+  border: 1px solid rgb(79 113 132 / 0.2);
+  color: #3a5563;
 }
 
-.treatment-manuscript .prose-mark-rover pre {
-  background: #f3ebda;
-  border: 1px solid #ddcdaf;
-  color: #3a322a;
+.treatment-fog .prose-mark-rover pre {
+  background: #e6ecf1;
+  border: 1px solid #cfd9e1;
+  color: #2f3a45;
 }
 
-/* Highlight palette tuned for the light parchment code surface */
-.treatment-manuscript .hljs-keyword,
-.treatment-manuscript .hljs-selector-tag,
-.treatment-manuscript .hljs-built_in {
-  color: #9a3412;
+/* Highlight palette tuned for Fog's light slate code surface */
+.treatment-fog .hljs-keyword,
+.treatment-fog .hljs-selector-tag,
+.treatment-fog .hljs-built_in {
+  color: #2f6f8f;
 }
 
-.treatment-manuscript .hljs-string,
-.treatment-manuscript .hljs-title,
-.treatment-manuscript .hljs-name {
-  color: #3f6212;
+.treatment-fog .hljs-string,
+.treatment-fog .hljs-title,
+.treatment-fog .hljs-name {
+  color: #3f7d5a;
 }
 
-.treatment-manuscript .hljs-number,
-.treatment-manuscript .hljs-literal {
-  color: #b45309;
+.treatment-fog .hljs-number,
+.treatment-fog .hljs-literal {
+  color: #9a6238;
 }
 
-.treatment-manuscript .hljs-comment {
-  color: #9c8f78;
+.treatment-fog .hljs-comment {
+  color: #8a98a3;
 }
 
-.treatment-manuscript .copy-code-button {
-  background: #ece2cd;
-  border-color: #ddcdaf;
-  color: #5b3a1a;
+.treatment-fog .copy-code-button {
+  background: #e6ecf1;
+  border-color: #cfd9e1;
+  color: #3a5563;
 }
 
-.treatment-manuscript .prose-mark-rover th {
-  border-bottom: 2px solid #cbb89a;
+.treatment-fog .prose-mark-rover th {
+  border-bottom: 2px solid #b3c4cf;
   text-align: start;
 }
 
-.treatment-manuscript .prose-mark-rover td {
-  border-bottom: 1px solid #e3d7bd;
+.treatment-fog .prose-mark-rover td {
+  border-bottom: 1px solid #dde5eb;
 }
 
-.treatment-manuscript .prose-mark-rover .large-markdown-table th {
-  background: #f3ebda;
+.treatment-fog .prose-mark-rover .large-markdown-table th {
+  background: #eef2f5;
 }
 
-.treatment-manuscript .prose-mark-rover input[type="checkbox"] {
-  accent-color: #9a3412;
+.treatment-fog .prose-mark-rover input[type="checkbox"] {
+  accent-color: #4f7184;
 }
 
-.treatment-manuscript .control-button {
-  border-color: #d8c8a8;
-  color: #6b5a48;
+.treatment-fog .control-button {
+  border-color: #cfd9e1;
+  color: #4a5763;
 }
 
-.treatment-manuscript .control-button:hover,
-.treatment-manuscript .control-button.active-control {
-  background: #3a322a;
-  border-color: #3a322a;
-  color: #faf6ec;
+.treatment-fog .control-button:hover,
+.treatment-fog .control-button.active-control {
+  background: #3a4b57;
+  border-color: #3a4b57;
+  color: #eef2f5;
 }
 
-.treatment-manuscript .primary-action {
-  background: #7c2d12;
+.treatment-fog .primary-action {
+  background: #4f7184;
 }
 
 /* ===========================================================================
-   TREATMENT 3 — CONSOLE
-   Dark technical IDE. The document reads on a floating dark card with a neon
-   emerald accent — code blends into the canvas with an accent rail, tables
-   zebra-stripe, and the surface stays dark on any system theme.
+   TREATMENT 2 — SAGE
+   Warm-neutral, light, organic. A faintly green eucalyptus paper with a
+   gray-green ink and a soft olive accent — calm and botanical, deliberately
+   not the cream/terracotta page. Serif headings keep it bookish and quiet.
    =========================================================================== */
 
-.treatment-console {
-  background: #e7ebf1;
+.treatment-sage {
+  background: linear-gradient(180deg, #eef0e8 0%, #e6ebe0 100%);
 }
 
-.treatment-console .reader {
-  color: #cbd5e1;
-  background: #0f1622;
-  border: 1px solid #1e2a3d;
+.treatment-sage .reader {
+  color: #373d34;
+}
+
+.treatment-sage .prose-mark-rover :where(h1, h2, h3, h4) {
+  font-family: Georgia, Cambria, "Times New Roman", serif;
+  font-weight: 700;
+  color: #2b3128;
+}
+
+.treatment-sage .prose-mark-rover h2 {
+  border-bottom: 1px solid #cdd4bf;
+  padding-bottom: 0.22em;
+}
+
+.treatment-sage .prose-mark-rover a {
+  color: #5f6e3f;
+}
+
+.treatment-sage .prose-mark-rover blockquote {
+  font-style: italic;
+  border-inline-start: 3px solid #b7bfa3;
+  color: #565d4a;
+  padding-inline-start: 1rem;
+}
+
+.treatment-sage .prose-mark-rover code {
+  background: rgb(111 122 82 / 0.12);
+  border: 1px solid rgb(111 122 82 / 0.24);
+  color: #545d3a;
+}
+
+.treatment-sage .prose-mark-rover pre {
+  background: #e8ebe0;
+  border: 1px solid #d2d8c4;
+  color: #373d34;
+}
+
+/* Highlight palette tuned for Sage's light eucalyptus code surface */
+.treatment-sage .hljs-keyword,
+.treatment-sage .hljs-selector-tag,
+.treatment-sage .hljs-built_in {
+  color: #5e7a3c;
+}
+
+.treatment-sage .hljs-string,
+.treatment-sage .hljs-title,
+.treatment-sage .hljs-name {
+  color: #3f6e57;
+}
+
+.treatment-sage .hljs-number,
+.treatment-sage .hljs-literal {
+  color: #97632f;
+}
+
+.treatment-sage .hljs-comment {
+  color: #8f917f;
+}
+
+.treatment-sage .copy-code-button {
+  background: #e8ebe0;
+  border-color: #d2d8c4;
+  color: #545d3a;
+}
+
+.treatment-sage .prose-mark-rover th {
+  border-bottom: 2px solid #b7bfa3;
+  text-align: start;
+}
+
+.treatment-sage .prose-mark-rover td {
+  border-bottom: 1px solid #dbe0d0;
+}
+
+.treatment-sage .prose-mark-rover .large-markdown-table th {
+  background: #eef0e8;
+}
+
+.treatment-sage .prose-mark-rover input[type="checkbox"] {
+  accent-color: #5f6e3f;
+}
+
+.treatment-sage .control-button {
+  border-color: #cdd4bf;
+  color: #565d4a;
+}
+
+.treatment-sage .control-button:hover,
+.treatment-sage .control-button.active-control {
+  background: #3a4030;
+  border-color: #3a4030;
+  color: #eef0e8;
+}
+
+.treatment-sage .primary-action {
+  background: #5f6e3f;
+}
+
+/* ===========================================================================
+   TREATMENT 3 — DUSK
+   Calm dark. The document reads on a warm charcoal card (never pure black)
+   with low-contrast warm off-white text and a muted sand accent — no glow,
+   no neon. The card floats on a quiet page so the surrounding chrome stays in
+   step with the system theme; the page only deepens in dark mode. A focused,
+   low-strain reading column for either theme.
+   =========================================================================== */
+
+.treatment-dusk {
+  background: #ece8e1;
+}
+
+.treatment-dusk .reader {
+  color: #cdc6bd;
+  background: #242122;
+  border: 1px solid #322e29;
   border-radius: 14px;
   padding: clamp(1.5rem, 4vw, 3rem);
-  box-shadow: 0 24px 60px rgb(2 6 23 / 0.22);
+  box-shadow: 0 24px 60px rgb(28 22 16 / 0.18);
   max-width: min(calc(var(--reader-measure, 70ch) + 6ch), 100%);
 }
 
-.treatment-console .prose-mark-rover :where(h1, h2, h3, h4) {
+.treatment-dusk .prose-mark-rover :where(h1, h2, h3, h4) {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  font-weight: 700;
-  color: #e2e8f0;
-}
-
-.treatment-console .prose-mark-rover h1 {
+  font-weight: 600;
   letter-spacing: -0.01em;
+  color: #e6e0d6;
 }
 
-.treatment-console .prose-mark-rover h2 {
-  border-inline-start: 3px solid #34d399;
-  padding-inline-start: 0.6em;
-  margin-inline-start: -0.75em;
+.treatment-dusk .prose-mark-rover h2 {
+  border-bottom: 1px solid #3a352f;
+  padding-bottom: 0.22em;
 }
 
-.treatment-console .prose-mark-rover a {
-  color: #34d399;
-  text-decoration: none;
+.treatment-dusk .prose-mark-rover a {
+  color: #c5a87f;
 }
 
-.treatment-console .prose-mark-rover a:hover {
-  text-decoration: underline;
+.treatment-dusk .prose-mark-rover blockquote {
+  border-inline-start: 3px solid #4a443c;
+  color: #a89f92;
+  padding-inline-start: 1rem;
 }
 
-.treatment-console .prose-mark-rover blockquote {
-  border-inline-start: 3px solid #22d3ee;
-  background: rgb(34 211 238 / 0.06);
-  color: #94a3b8;
-  padding: 0.6rem 1rem;
+.treatment-dusk .prose-mark-rover code {
+  background: rgb(255 255 255 / 0.06);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  color: #d8b894;
 }
 
-.treatment-console .prose-mark-rover code {
-  background: rgb(52 211 153 / 0.12);
-  border: 1px solid rgb(52 211 153 / 0.25);
-  color: #6ee7b7;
+.treatment-dusk .prose-mark-rover pre {
+  background: #1d1b1c;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  color: #cdc6bd;
 }
 
-.treatment-console .prose-mark-rover pre {
-  background: #0b1019;
-  border: 1px solid #1e2a3d;
-  border-left: 3px solid #34d399;
-  color: #cbd5e1;
+.treatment-dusk .copy-code-button {
+  background: #1d1b1c;
+  border-color: rgb(255 255 255 / 0.12);
+  color: #d8b894;
 }
 
-.treatment-console .copy-code-button {
-  background: #111a26;
-  border-color: rgb(52 211 153 / 0.35);
-  color: #6ee7b7;
-}
-
-.treatment-console .prose-mark-rover th {
-  color: #6ee7b7;
-  border-bottom: 2px solid #34d399;
+.treatment-dusk .prose-mark-rover th {
+  border-bottom: 2px solid #4a443c;
   text-align: start;
 }
 
-.treatment-console .prose-mark-rover td {
-  border-bottom: 1px solid #1e2a3d;
+.treatment-dusk .prose-mark-rover td {
+  border-bottom: 1px solid #322e29;
 }
 
-.treatment-console .prose-mark-rover tbody tr:nth-child(even) {
-  background: rgb(148 163 184 / 0.06);
+.treatment-dusk .prose-mark-rover tbody tr:nth-child(even) {
+  background: rgb(255 255 255 / 0.03);
 }
 
-.treatment-console .prose-mark-rover .large-markdown-table th {
-  background: #0b1019;
+.treatment-dusk .prose-mark-rover .large-markdown-table th {
+  background: #1d1b1c;
 }
 
-.treatment-console .prose-mark-rover input[type="checkbox"] {
-  accent-color: #34d399;
+.treatment-dusk .prose-mark-rover input[type="checkbox"] {
+  accent-color: #c5a87f;
 }
 
-.treatment-console .control-button:hover,
-.treatment-console .control-button.active-control {
-  background: #34d399;
-  border-color: #34d399;
-  color: #052e1f;
+.treatment-dusk .control-button {
+  border-color: #3a352f;
+  color: #a89f92;
 }
 
-.treatment-console .primary-action {
-  background: #34d399;
-  color: #052e1f;
+.treatment-dusk .control-button:hover,
+.treatment-dusk .control-button.active-control {
+  background: #cdc6bd;
+  border-color: #cdc6bd;
+  color: #242122;
+}
+
+.treatment-dusk .primary-action {
+  background: #c5a87f;
+  color: #242122;
 }
 
 /* ===========================================================================
-   Default highlight palette (Broadsheet + Console dark code surfaces)
+   Default highlight palette — Dusk's warm dark code surface. Soft, low-glow
+   hues that sit quietly against #1d1b1c.
    =========================================================================== */
 
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-built_in {
-  color: #93c5fd;
+  color: #c5a87f;
 }
 
 .hljs-string,
 .hljs-title,
 .hljs-name {
-  color: #86efac;
+  color: #9db389;
 }
 
 .hljs-number,
 .hljs-literal {
-  color: #fca5a5;
+  color: #c99b8a;
 }
 
 .hljs-comment {
-  color: #94a3b8;
+  color: #8a8174;
 }
 
 /* ===========================================================================
@@ -639,6 +816,18 @@ body {
     background: #09090b;
   }
 
+  /* Re-point the island token system at a deep zinc paper for dark mode; the
+     variants and shared controls inherit it without per-rule overrides. */
+  .island-layer {
+    --isl-paper: rgb(24 24 27 / 0.92);
+    --isl-ink: #f4f4f5;
+    --isl-muted: #a1a1aa;
+    --isl-rule: rgb(255 255 255 / 0.12);
+    --isl-rule-strong: rgb(255 255 255 / 0.26);
+    --isl-field: rgb(255 255 255 / 0.06);
+    --isl-shadow: 0 8px 30px rgb(0 0 0 / 0.5);
+  }
+
   .control-button {
     border-color: rgb(63 63 70);
     color: rgb(212 212 216);
@@ -671,161 +860,186 @@ body {
     color: #e4e4e7;
   }
 
-  /* ---- Broadsheet (dark) ---- */
-  .treatment-broadsheet {
-    background: radial-gradient(120% 70% at 50% -10%, #131313 0%, #0a0a0a 100%);
+  /* ---- Fog (dark) — cool slate night ---- */
+  .treatment-fog {
+    background: linear-gradient(180deg, #1a1f24 0%, #14181c 100%);
   }
 
-  .treatment-broadsheet .reader {
-    color: #f4f4f5;
+  .treatment-fog .reader {
+    color: #c2ccd4;
   }
 
-  .treatment-broadsheet .prose-mark-rover h1 {
-    border-top-color: #fb7185;
+  .treatment-fog .prose-mark-rover :where(h1, h2, h3, h4) {
+    color: #e2e8ee;
   }
 
-  .treatment-broadsheet .prose-mark-rover h2 {
-    border-inline-start-color: #fb7185;
+  .treatment-fog .prose-mark-rover h2 {
+    border-bottom-color: #2c343c;
   }
 
-  .treatment-broadsheet .reader > p:first-of-type::first-letter {
-    color: #fb7185;
+  .treatment-fog .prose-mark-rover a {
+    color: #8fb0c2;
   }
 
-  .treatment-broadsheet .prose-mark-rover a {
-    color: #fb7185;
+  .treatment-fog .prose-mark-rover blockquote {
+    border-inline-start-color: #3a464f;
+    color: #9aa6b0;
   }
 
-  .treatment-broadsheet .prose-mark-rover blockquote {
-    color: #f4f4f5;
-    border-inline-start-color: #fb7185;
+  .treatment-fog .prose-mark-rover code {
+    background: rgb(143 176 194 / 0.1);
+    border-color: rgb(143 176 194 / 0.2);
+    color: #a8c2d0;
   }
 
-  .treatment-broadsheet .prose-mark-rover code {
-    background: #27272a;
-    color: #fda4af;
+  .treatment-fog .prose-mark-rover pre {
+    background: #161b20;
+    border-color: #2c343c;
+    color: #c2ccd4;
   }
 
-  .treatment-broadsheet .prose-mark-rover pre {
-    border-top-color: #fb7185;
+  .treatment-fog .hljs-keyword,
+  .treatment-fog .hljs-selector-tag,
+  .treatment-fog .hljs-built_in {
+    color: #7fb2cf;
   }
 
-  .treatment-broadsheet .prose-mark-rover th {
-    border-bottom-color: #f4f4f5;
+  .treatment-fog .hljs-string,
+  .treatment-fog .hljs-title,
+  .treatment-fog .hljs-name {
+    color: #8fcaa0;
   }
 
-  .treatment-broadsheet .prose-mark-rover td {
-    border-bottom-color: #27272a;
+  .treatment-fog .hljs-number,
+  .treatment-fog .hljs-literal {
+    color: #d2a079;
   }
 
-  .treatment-broadsheet .prose-mark-rover .large-markdown-table th {
-    background: #0a0a0a;
+  .treatment-fog .copy-code-button {
+    background: #161b20;
+    border-color: #2c343c;
+    color: #a8c2d0;
   }
 
-  .treatment-broadsheet .control-button:hover,
-  .treatment-broadsheet .control-button.active-control {
-    background: #f4f4f5;
-    border-color: #f4f4f5;
-    color: #15110f;
+  .treatment-fog .prose-mark-rover th {
+    border-bottom-color: #3a464f;
   }
 
-  .treatment-broadsheet .primary-action {
-    background: #fb7185;
-    color: #15110f;
+  .treatment-fog .prose-mark-rover td {
+    border-bottom-color: #262d34;
   }
 
-  /* ---- Manuscript (dark) ---- */
-  .treatment-manuscript {
-    background: radial-gradient(120% 80% at 50% 0%, #211c17 0%, #14100c 100%);
+  .treatment-fog .prose-mark-rover .large-markdown-table th {
+    background: #14181c;
   }
 
-  .treatment-manuscript .reader {
-    color: #e7ddcb;
+  .treatment-fog .control-button {
+    border-color: #2c343c;
+    color: #9aa6b0;
   }
 
-  .treatment-manuscript .prose-mark-rover :where(h1, h2, h3, h4) {
-    color: #f5ecd8;
+  .treatment-fog .control-button:hover,
+  .treatment-fog .control-button.active-control {
+    background: #c2ccd4;
+    border-color: #c2ccd4;
+    color: #161b20;
   }
 
-  .treatment-manuscript .prose-mark-rover h2 {
-    border-bottom-color: #3a322a;
+  .treatment-fog .primary-action {
+    background: #6f93a6;
   }
 
-  .treatment-manuscript .prose-mark-rover a {
-    color: #fbbf24;
+  /* ---- Sage (dark) — warm green night ---- */
+  .treatment-sage {
+    background: linear-gradient(180deg, #1b1e18 0%, #15170f 100%);
   }
 
-  .treatment-manuscript .prose-mark-rover blockquote {
-    border-inline-start-color: #4a4030;
-    color: #c9bca6;
+  .treatment-sage .reader {
+    color: #cdd2bf;
   }
 
-  .treatment-manuscript .prose-mark-rover code {
-    background: #211c17;
-    border-color: #3a322a;
-    color: #e7ddcb;
+  .treatment-sage .prose-mark-rover :where(h1, h2, h3, h4) {
+    color: #e4e9d6;
   }
 
-  .treatment-manuscript .prose-mark-rover pre {
-    background: #1a1610;
-    border-color: #3a322a;
-    color: #e7ddcb;
+  .treatment-sage .prose-mark-rover h2 {
+    border-bottom-color: #343a2c;
   }
 
-  .treatment-manuscript .hljs-keyword,
-  .treatment-manuscript .hljs-selector-tag,
-  .treatment-manuscript .hljs-built_in {
-    color: #fbbf24;
+  .treatment-sage .prose-mark-rover a {
+    color: #a8b87f;
   }
 
-  .treatment-manuscript .hljs-string,
-  .treatment-manuscript .hljs-title,
-  .treatment-manuscript .hljs-name {
-    color: #a3e635;
+  .treatment-sage .prose-mark-rover blockquote {
+    border-inline-start-color: #3f472f;
+    color: #a3a892;
   }
 
-  .treatment-manuscript .hljs-number,
-  .treatment-manuscript .hljs-literal {
-    color: #fdba74;
+  .treatment-sage .prose-mark-rover code {
+    background: rgb(168 184 127 / 0.1);
+    border-color: rgb(168 184 127 / 0.22);
+    color: #b9c79a;
   }
 
-  .treatment-manuscript .copy-code-button {
-    background: #211c17;
-    border-color: #3a322a;
-    color: #e7ddcb;
+  .treatment-sage .prose-mark-rover pre {
+    background: #181b13;
+    border-color: #343a2c;
+    color: #cdd2bf;
   }
 
-  .treatment-manuscript .prose-mark-rover th {
-    border-bottom-color: #4a4030;
+  .treatment-sage .hljs-keyword,
+  .treatment-sage .hljs-selector-tag,
+  .treatment-sage .hljs-built_in {
+    color: #9cb56a;
   }
 
-  .treatment-manuscript .prose-mark-rover td {
-    border-bottom-color: #2c261d;
+  .treatment-sage .hljs-string,
+  .treatment-sage .hljs-title,
+  .treatment-sage .hljs-name {
+    color: #8fc79f;
   }
 
-  .treatment-manuscript .prose-mark-rover .large-markdown-table th {
-    background: #1a1610;
+  .treatment-sage .hljs-number,
+  .treatment-sage .hljs-literal {
+    color: #d0a26a;
   }
 
-  .treatment-manuscript .control-button {
-    border-color: #3a322a;
-    color: #c9bca6;
+  .treatment-sage .copy-code-button {
+    background: #181b13;
+    border-color: #343a2c;
+    color: #b9c79a;
   }
 
-  .treatment-manuscript .control-button:hover,
-  .treatment-manuscript .control-button.active-control {
-    background: #e7ddcb;
-    border-color: #e7ddcb;
-    color: #211c17;
+  .treatment-sage .prose-mark-rover th {
+    border-bottom-color: #3f472f;
   }
 
-  .treatment-manuscript .primary-action {
-    background: #fbbf24;
-    color: #211c17;
+  .treatment-sage .prose-mark-rover td {
+    border-bottom-color: #262a1d;
   }
 
-  /* ---- Console (dark page deepens; card unchanged) ---- */
-  .treatment-console {
-    background: #07090e;
+  .treatment-sage .prose-mark-rover .large-markdown-table th {
+    background: #181b13;
+  }
+
+  .treatment-sage .control-button {
+    border-color: #343a2c;
+    color: #a3a892;
+  }
+
+  .treatment-sage .control-button:hover,
+  .treatment-sage .control-button.active-control {
+    background: #cdd2bf;
+    border-color: #cdd2bf;
+    color: #181b13;
+  }
+
+  .treatment-sage .primary-action {
+    background: #7a8a52;
+  }
+
+  /* ---- Dusk (dark page deepens; warm-dark card unchanged) ---- */
+  .treatment-dusk {
+    background: #161413;
   }
 }

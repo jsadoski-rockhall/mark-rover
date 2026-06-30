@@ -9,44 +9,21 @@
   } from "@chenglou/pretext";
   import type { RenderState } from "../shared/ipc.ts";
   import { isLargeTable } from "../shared/table-threshold.ts";
-
-  type Locale = "en" | "es";
-  type FontKey = "serif" | "sans" | "mono" | "slab" | "comic" | "script";
-  type Treatment = "broadsheet" | "manuscript" | "console";
-  type Messages = Record<string, string>;
-
-  interface ReaderPreferences {
-    measure: number;
-    fontSize: number;
-    fitTextSize: boolean;
-    lineHeight: number;
-    font: FontKey;
-    ligatures: boolean;
-    locale: Locale;
-    treatment: Treatment;
-    codeLineNumbers: boolean;
-  }
+  import {
+    fontStacks,
+    treatmentOptions,
+    type Locale,
+    type Messages,
+    type ReaderPreferences,
+    type Treatment
+  } from "./reader-preferences.ts";
+  // The reader's typesetting controls live in a calm, auto-hiding island at
+  // the bottom of the window, off the page so reading stays quiet.
+  import ControlIsland from "./controls/ControlIsland.svelte";
 
   const preferenceKey = "mark-rover.reader-preferences";
-  const widthOptions: number[] = [66, 70, 88];
-  const treatmentOptions: { key: string; value: Treatment }[] = [
-    { key: "treatmentBroadsheet", value: "broadsheet" },
-    { key: "treatmentManuscript", value: "manuscript" },
-    { key: "treatmentConsole", value: "console" }
-  ];
   const treatmentValues = new Set<Treatment>(treatmentOptions.map((option) => option.value));
-  const fontOptions: { key: string; value: FontKey }[] = [
-    { key: "fontSerif", value: "serif" },
-    { key: "fontSans", value: "sans" },
-    { key: "fontMono", value: "mono" },
-    { key: "fontSlab", value: "slab" },
-    { key: "fontComic", value: "comic" },
-    { key: "fontScript", value: "script" }
-  ];
-  const localeOptions: { label: string; value: Locale }[] = [
-    { label: "English", value: "en" },
-    { label: "Español", value: "es" }
-  ];
+
   const messages: Record<Locale, Messages> = {
     en: {
       appName: "Mark Rover",
@@ -56,9 +33,10 @@
       fitText: "Fit",
       ligatures: "Ligatures",
       treatment: "Treatment",
-      treatmentBroadsheet: "Broadsheet",
-      treatmentManuscript: "Manuscript",
-      treatmentConsole: "Console",
+      typeface: "Typeface",
+      treatmentFog: "Fog",
+      treatmentSage: "Sage",
+      treatmentDusk: "Dusk",
       loading: "Loading document...",
       openExternalTitle: "Open external link?",
       cancel: "Cancel",
@@ -86,9 +64,10 @@
       fitText: "Ajustar",
       ligatures: "Ligaduras",
       treatment: "Estilo",
-      treatmentBroadsheet: "Broadsheet",
-      treatmentManuscript: "Manuscrito",
-      treatmentConsole: "Consola",
+      typeface: "Tipografía",
+      treatmentFog: "Niebla",
+      treatmentSage: "Salvia",
+      treatmentDusk: "Penumbra",
       loading: "Cargando documento...",
       openExternalTitle: "¿Abrir enlace externo?",
       cancel: "Cancelar",
@@ -109,18 +88,6 @@
       fontScript: "Script"
     }
   };
-  // Each stack ends with the platform emoji fonts so emoji never fall through
-  // to a glyphless last-resort font on Windows or Linux.
-  const emojiFallback = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"';
-  const fontStacks: Record<FontKey, string> = {
-    serif: `Georgia, Cambria, "Times New Roman", serif, ${emojiFallback}`,
-    sans: `Inter, ui-sans-serif, system-ui, sans-serif, ${emojiFallback}`,
-    mono: `"SFMono-Regular", Consolas, "Liberation Mono", monospace, ${emojiFallback}`,
-    slab: `Rockwell, "Roboto Slab", "American Typewriter", serif, ${emojiFallback}`,
-    comic: `"Comic Sans MS", "Comic Sans", cursive, ${emojiFallback}`,
-    script: `"Snell Roundhand", "Brush Script MT", cursive, ${emojiFallback}`
-  };
-
   let state: RenderState = {
     status: "loading",
     html: "",
@@ -137,7 +104,7 @@
     font: "serif",
     ligatures: true,
     locale: "en",
-    treatment: "broadsheet",
+    treatment: "fog",
     codeLineNumbers: false
   };
   let pretextStats: LayoutResult | null = null;
@@ -469,7 +436,7 @@
       preferences = { ...preferences, ...(JSON.parse(saved) as Partial<ReaderPreferences>) };
     }
     if (!treatmentValues.has(preferences.treatment)) {
-      preferences = { ...preferences, treatment: "broadsheet" };
+      preferences = { ...preferences, treatment: "fog" };
     }
     state = await window.markRover.getDocument();
     if (state.status === "ready") markReady();
@@ -523,112 +490,13 @@
 
 <main
   class="app-shell min-h-screen text-slate-950 transition-colors dark:text-zinc-50"
-  class:treatment-broadsheet={preferences.treatment === "broadsheet"}
-  class:treatment-manuscript={preferences.treatment === "manuscript"}
-  class:treatment-console={preferences.treatment === "console"}
+  class:treatment-fog={preferences.treatment === "fog"}
+  class:treatment-sage={preferences.treatment === "sage"}
+  class:treatment-dusk={preferences.treatment === "dusk"}
 >
-  <div class="mx-auto flex min-h-screen w-full max-w-[96ch] flex-col px-5 py-6 sm:px-8 lg:px-10">
+  <div class="mx-auto flex min-h-screen w-full max-w-[96ch] flex-col px-5 pt-6 pb-28 sm:px-8 lg:px-10">
     <header class="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4 font-ui text-sm text-slate-500 dark:border-zinc-800 dark:text-zinc-400">
       <div class="font-ui font-semibold tracking-wide text-slate-700 dark:text-zinc-200">{t.appName}</div>
-      <div class="flex flex-wrap items-center gap-3">
-        <fieldset class="flex items-center gap-1" aria-label={t.treatment}>
-          {#each treatmentOptions as option}
-            <button
-              class:active-control={preferences.treatment === option.value}
-              class="control-button"
-              type="button"
-              on:click={() => updatePreference("treatment", option.value)}
-            >
-              {t[option.key]}
-            </button>
-          {/each}
-        </fieldset>
-        <fieldset class="flex items-center gap-1" aria-label={t.lineWidth}>
-          {#each widthOptions as width}
-            <button
-              class:active-control={preferences.measure === width}
-              class="control-button"
-              type="button"
-              on:click={() => updatePreference("measure", width)}
-            >
-              {width}
-            </button>
-          {/each}
-        </fieldset>
-        <label class="flex items-center gap-2">
-          <span>{t.lineHeight}</span>
-          <input
-            class="h-1 w-24 accent-slate-900 dark:accent-zinc-100"
-            type="range"
-            min="1.35"
-            max="2"
-            step="0.01"
-            value={preferences.lineHeight}
-            on:input={(event) => updatePreference("lineHeight", Number(event.currentTarget.value))}
-          />
-        </label>
-        <label class="flex items-center gap-2">
-          <span>{t.textSize}</span>
-          <input
-            class="h-1 w-24 accent-slate-900 dark:accent-zinc-100"
-            type="range"
-            min="14"
-            max="24"
-            step="1"
-            value={preferences.fontSize}
-            aria-label={t.textSize}
-            data-testid="text-size-slider"
-            on:input={(event) => updatePreference("fontSize", Number(event.currentTarget.value))}
-          />
-          <output class="tabular-nums" data-testid="text-size-value">{effectiveFontSize}</output>
-        </label>
-        <label class="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={preferences.fitTextSize}
-            data-testid="fit-text-toggle"
-            on:change={(event) => updatePreference("fitTextSize", event.currentTarget.checked)}
-          />
-          <span>{t.fitText}</span>
-        </label>
-        <select
-          class="rounded border border-slate-300 bg-white px-2 py-1 text-slate-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-          value={preferences.font}
-          on:change={(event) => updatePreference("font", event.currentTarget.value as FontKey)}
-        >
-          {#each fontOptions as option}
-            <option value={option.value}>{t[option.key]}</option>
-          {/each}
-        </select>
-        <select
-          class="rounded border border-slate-300 bg-white px-2 py-1 text-slate-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-          value={preferences.locale}
-          aria-label={t.locale}
-          data-testid="locale-select"
-          on:change={(event) => updatePreference("locale", event.currentTarget.value as Locale)}
-        >
-          {#each localeOptions as option}
-            <option value={option.value}>{option.label}</option>
-          {/each}
-        </select>
-        <label class="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={preferences.ligatures}
-            on:change={(event) => updatePreference("ligatures", event.currentTarget.checked)}
-          />
-          <span>{t.ligatures}</span>
-        </label>
-        <label class="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={preferences.codeLineNumbers}
-            data-testid="line-numbers-toggle"
-            on:change={(event) => updatePreference("codeLineNumbers", event.currentTarget.checked)}
-          />
-          <span>{t.lineNumbers}</span>
-        </label>
-      </div>
       {#if state.status === "ready"}
         <div>
           {state.meta?.tokens ?? 0} {t.tokens}{#if pretextStats} · {pretextStats.lineCount} {t.pretextLines}{/if}
@@ -653,6 +521,10 @@
         data-testid="document">{@html state.html}</article>
     {/if}
   </div>
+
+  {#if state.status === "ready"}
+    <ControlIsland {preferences} {t} {effectiveFontSize} update={updatePreference} />
+  {/if}
 </main>
 
 {#if pendingExternalLink}
