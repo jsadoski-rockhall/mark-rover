@@ -10,7 +10,18 @@ const app = await electron.launch({
 
 try {
   const page = await app.firstWindow();
+
+  // Pin the bottom control island visible (it auto-hides in normal use) so the
+  // locale select stays interactable.
+  await page.evaluate(() => {
+    localStorage.setItem("mark-rover.island-autohide", "off");
+  });
+
   await page.waitForSelector('[data-testid="document"]', { timeout: 5000 });
+
+  // The island opens collapsed to a single pill; expand it to reach the locale
+  // select.
+  await page.locator('[data-testid="control-island-toggle"]').click();
 
   await page.locator('[data-testid="locale-select"]').selectOption("es");
   await page.locator('a[href^="https://"]').first().click();

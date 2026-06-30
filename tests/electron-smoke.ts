@@ -20,7 +20,17 @@ try {
     window.show();
   });
 
+  // Pin the bottom control island visible (it auto-hides in normal use) so its
+  // controls stay interactable for the duration of the test.
+  await page.evaluate(() => {
+    localStorage.setItem("mark-rover.island-autohide", "off");
+  });
+
   await page.waitForSelector('[data-testid="document"]', { timeout: 5000 });
+
+  // The island opens collapsed to a single pill; expand it to reach the
+  // typesetting controls the test drives below.
+  await page.locator('[data-testid="control-island-toggle"]').click();
 
   const heading = await page.locator("h1").first().textContent();
   if (heading !== "Smoke Document") {
