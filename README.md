@@ -20,8 +20,23 @@ pnpm test:electron
 ## Package
 
 ```sh
-pnpm package:mac
+pnpm package:mac     # macOS arm64      -> out/MarkRover-darwin-arm64/MarkRover.app
+pnpm package:win     # Windows x64      -> out/MarkRover-win32-x64.zip
+pnpm package:linux   # Linux arm64 + x64 -> out/MarkRover-linux-*.tar.gz
 ```
+
+`@electron/packager` downloads the prebuilt Electron for the target, so any host can cross-package any target (only the macOS ad-hoc code signature has to run on macOS).
+
+## Releases
+
+GitHub Actions ([`.github/workflows/release.yml`](.github/workflows/release.yml)) builds every platform on its native runner and publishes a GitHub Release when a version tag is pushed:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Targets: macOS arm64, Windows x64, Linux arm64, and Linux x64. The archives attach to a Release with auto-generated notes. You can also run the workflow manually from the **Actions** tab to dry-run the build matrix without publishing. Binaries are unsigned (macOS gets an ad-hoc signature); recipients allowlist them on first launch.
 
 ## Notes
 
