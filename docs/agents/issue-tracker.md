@@ -1,19 +1,39 @@
-# Issue tracker: Local Markdown
+# Issue tracker: GitHub Issues
 
-Issues and PRDs for this repo live as markdown files in `.scratch/`.
+Active issues for this repo live in **GitHub Issues** on
+`jsadoski-rockhall/mark-rover`, managed with the `gh` CLI.
 
 ## Conventions
 
-- One feature per directory: `.scratch/<feature-slug>/`
-- The PRD is `.scratch/<feature-slug>/PRD.md`
-- Implementation issues are `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`
-- Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
-- Comments and conversation history append to the bottom of the file under a `## Comments` heading
+- Create issues with `gh issue create`; read them with `gh issue view <n>` and
+  `gh issue list`.
+- Triage state is expressed with **labels**, not a `Status:` line. See
+  `triage-labels.md` for the canonical label vocabulary; the labels exist on the
+  GitHub repo.
+- Use `bug` / `enhancement` (GitHub defaults) to mark the issue type.
+- Cross-reference related issues with `#<number>` so GitHub links them.
+- Conversation history is GitHub comments (`gh issue comment <n>`).
+- Close with `gh issue close <n>` (optionally `--reason completed|not planned`).
+
+## PRDs
+
+Long-form PRDs remain local markdown at `.scratch/<feature-slug>/PRD.md`. Link
+the relevant GitHub issues from the PRD by number/URL.
+
+## Historical archive
+
+Pre-migration work was tracked as local markdown under
+`.scratch/<feature-slug>/issues/<NN>-<slug>.md`. Those files are a **frozen
+archive** of completed work (e.g. `markdown-viewer-prototypes/issues/01`–`24`)
+and are kept for history. Do not add new issues there — new issues go to GitHub.
 
 ## When a skill says "publish to the issue tracker"
 
-Create a new file under `.scratch/<feature-slug>/` (creating the directory if needed).
+Create a GitHub issue with `gh issue create`, applying the appropriate triage
+and type labels.
 
 ## When a skill says "fetch the relevant ticket"
 
-Read the file at the referenced path. The user will normally pass the path or the issue number directly.
+Run `gh issue view <number>` (the user will normally pass the number or URL). If
+the reference points at a `.scratch/.../issues/NN` path, it's an archived
+pre-migration issue — read the file directly.
