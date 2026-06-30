@@ -4,5 +4,3 @@ allowBuilds:
 onlyBuiltDependencies:
   - electron
   - esbuild
-patchedDependencies:
-  "@electron/packager": patches/@electron__packager.patch
