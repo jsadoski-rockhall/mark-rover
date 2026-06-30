@@ -1,0 +1,45 @@
+name: CI
+
+# Lint, typecheck, build, and test. Runs on pushes to main (collaborators only)
+# and on pull requests. Uses `pull_request` — never `pull_request_target` — so
+# every PR build gets a read-only token and no access to secrets.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Cancel an in-progress run when new commits land on the same PR or branch.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    name: QA
+    runs-on: ubuntu-latest
+    # Gate: only run for pushes (which require write access) and for PRs opened
+    # from a branch in this same repository. PRs from forks are skipped, so a
+    # stranger opening a PR can't make our CI execute their code. To allow a
+    # vetted fork PR to run, remove this condition or approve it in the UI.
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/setup@v1
+        with:
+          runtime: node@24
+          cache: true
+          # Install explicitly below so we can pin to the frozen lockfile.
+          install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # pnpm qa = fmt:check + lint + knip + typecheck + build + corpus tests.
+      - name: QA
+        run: pnpm qa
