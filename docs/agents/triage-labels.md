@@ -1,6 +1,6 @@
 # Triage Labels
 
-The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this repo's issue tracker.
+The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this repo's issue tracker. These now exist as **GitHub labels** on `jsadoski-rockhall/mark-rover`; apply them with `gh issue create --label <name>` / `gh issue edit <n> --add-label <name>`.
 
 | Label in mattpocock/skills | Label in our tracker | Meaning                                  |
 | -------------------------- | -------------------- | ---------------------------------------- |
