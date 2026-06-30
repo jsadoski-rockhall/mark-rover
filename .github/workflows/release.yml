@@ -4,6 +4,29 @@ name: Release
 #   git tag v0.1.0 && git push origin v0.1.0
 # To dry-run the build matrix without publishing, trigger manually from the
 # Actions tab (workflow_dispatch); the release job is skipped for those runs.
+#
+# Code signing is optional and degrades gracefully: each signing step is gated
+# on its credentials being present, so a build with no secrets configured still
+# succeeds and publishes (ad-hoc-signed macOS, unsigned Windows). Configure
+# these repository secrets to enable signing:
+#
+#   macOS (Developer ID + notarization, issue #25):
+#     MACOS_CERTIFICATE           base64 of the Developer ID Application .p12
+#     MACOS_CERTIFICATE_PASSWORD  password for that .p12
+#     MACOS_KEYCHAIN_PASSWORD     any string; locks the ephemeral CI keychain
+#     APPLE_SIGNING_IDENTITY      e.g. "Developer ID Application: Name (TEAMID)"
+#     APPLE_API_KEY               base64 of the App Store Connect API key (.p8)
+#     APPLE_API_KEY_ID            the key's ID
+#     APPLE_API_ISSUER            the App Store Connect issuer UUID
+#
+#   Windows (Azure Trusted Signing, issue #26):
+#     AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
+#     TRUSTED_SIGNING_ENDPOINT    e.g. https://eus.codesigning.azure.net/
+#     TRUSTED_SIGNING_ACCOUNT     Trusted Signing account name
+#     TRUSTED_SIGNING_PROFILE     certificate profile name
+#
+# This workflow runs only on tag pushes and manual dispatch — never on
+# pull_request — so fork PRs never reach these secrets (CI prefs: gate fork PRs).
 on:
   push:
     tags:
@@ -17,6 +40,15 @@ jobs:
   build:
     name: Build ${{ matrix.platform }} ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
+    # Surfaced at job level only so the signing steps can gate on their presence
+    # (`env.* != ''`); steps that consume the secrets re-declare what they need.
+    env:
+      MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+      # Notary-credential proxy: lets the verify step gate on notarization being
+      # configured, not just signing. A plain string (unlike APPLE_API_KEY, which
+      # the setup step rewrites to a file path via GITHUB_ENV).
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
     strategy:
       fail-fast: false
       matrix:
@@ -41,8 +73,73 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # Imports the Developer ID cert into an ephemeral keychain and writes the
+      # notary API key to a temp file, exporting APPLE_API_KEY for the Package
+      # step. Skipped (leaving the ad-hoc fallback in packageApp) when the cert
+      # secret is absent.
+      - name: Set up macOS code signing
+        if: runner.os == 'macOS' && env.MACOS_CERTIFICATE != ''
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+        run: |
+          set -euo pipefail
+          CERT_PATH="$RUNNER_TEMP/developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+          echo "$MACOS_CERTIFICATE" | base64 --decode > "$CERT_PATH"
+          security create-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: \
+            -k "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          # notarytool reads the API key from this path via APPLE_API_KEY.
+          API_KEY_PATH="$RUNNER_TEMP/asc-api-key.p8"
+          echo "$APPLE_API_KEY" | base64 --decode > "$API_KEY_PATH"
+          echo "APPLE_API_KEY=$API_KEY_PATH" >> "$GITHUB_ENV"
+
       - name: Package
+        # Empty on non-macOS runners and on unconfigured macOS runs; packageApp
+        # only reads these for the darwin target and falls back to ad-hoc when
+        # APPLE_SIGNING_IDENTITY is unset.
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          # APPLE_API_KEY_ID comes from the job-level env; APPLE_API_KEY is set
+          # to a file path by the keychain step above.
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: node scripts/package.ts --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+
+      # Verifies the published bundle is acceptable to Gatekeeper. Gated on the
+      # notary credentials too, not just the cert: spctl rejects a signed-but-not
+      # -notarized app, so a cert-only build (which notarizeMacApp leaves
+      # un-notarized) must not reach this assertion.
+      - name: Verify macOS signature
+        if: runner.os == 'macOS' && env.MACOS_CERTIFICATE != '' && env.APPLE_API_KEY_ID != ''
+        run: |
+          set -euo pipefail
+          APP="out/MarkRover-darwin-${{ matrix.arch }}/MarkRover.app"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          spctl -a -vvv "$APP"
+
+      # Authenticode-signs the Windows binary before it is archived. Skipped when
+      # Trusted Signing credentials are absent, leaving the unsigned binary.
+      - name: Sign Windows binary (Azure Trusted Signing)
+        if: runner.os == 'Windows' && env.AZURE_CLIENT_ID != ''
+        uses: azure/trusted-signing-action@v0.5.9
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.TRUSTED_SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ secrets.TRUSTED_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ secrets.TRUSTED_SIGNING_PROFILE }}
+          files-folder: ${{ github.workspace }}\out\MarkRover-win32-${{ matrix.arch }}
+          files-folder-filter: exe
+          file-digest: SHA256
 
       # Each runner archives with the tool native to its OS, so we never depend
       # on `zip` being present on Windows or on a cross-OS archiver.

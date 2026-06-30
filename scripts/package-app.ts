@@ -1,12 +1,9 @@
 import { packager } from "@electron/packager";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { signMacApp } from "./sign-mac.ts";
 import { stageApp } from "./stage-app.ts";
 
 export type Platform = "darwin" | "win32" | "linux";
 export type Arch = "x64" | "arm64";
-
-const execFileP = promisify(execFile);
 
 // Per-platform packager options. The shared bits (name, asar unpack, prune)
 // live in packageApp; only the OS-specific metadata diverges here.
@@ -61,11 +58,10 @@ export async function packageApp(platform: Platform, arch: Arch): Promise<string
   const outDir = `out/MarkRover-${platform}-${arch}`;
 
   if (platform === "darwin") {
-    // LaunchServices refuses to persist a default-handler claim ("Always open
-    // with") for an unsigned app, so .md association silently falls back to the
-    // previous default. An ad-hoc signature is enough for local use; replace
-    // with Developer ID signing for notarized distribution.
-    await execFileP("codesign", ["--force", "--deep", "-s", "-", `${outDir}/MarkRover.app`]);
+    // Signing (and, in CI, notarization) lives in sign-mac.ts to keep this
+    // cross-platform packager core free of one platform's signing toolchain —
+    // the same reason archiving is left to the caller (see above).
+    await signMacApp(`${outDir}/MarkRover.app`);
   }
 
   return outDir;
